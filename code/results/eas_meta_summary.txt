@@ -1,0 +1,49 @@
+=== BBJ + TPMI EAS edge-level meta-analysis (ITEM 2) ===
+BBJ edges: 101 | TPMI edges: 49 | shared (meta'd): 34
+
+[SCALE DIAGNOSTIC] OLS(TPMI beta ~ BBJ beta) on well-powered same-sign shared edges (n=9, both p<0.05):
+    slope = 0.702  intercept = +0.1042  R2 = 0.775
+    => slope 0.70 (n=9, wide CI) reflects mild attenuation (BBJ discovery winner's-curse +
+       heterogeneity), NOT a unit mismatch (which would be ~10x or ~0.1x). Both cohorts are
+       per-SD/log-OR; inverse-variance meta is scale-valid. Random-effects handles residual het.
+
+[STAGING-RELEVANT] Bonferroni edge threshold on meta network = 0.05/34 = 1.47e-03
+
+[BACKWARD CROSS-STAGE EDGES in meta set] (STAGE[exp] > STAGE[out]):
+    T2D->BMI (stage 2->1) | BBJ -0.098(p2.1e-07) TPMI -0.046(p7.1e-03) | FIXED -0.069 SE0.013 p4.50e-08[SURV] | RANDOM -0.071 SE0.026 p6.48e-03[ns] | Q=4.24 I2=0.76 tau2=0.0010 | steiger=True
+
+[ALL META EDGES] exposure->outcome | fixed b(p) | random b(p) | Q I2
+       BMI->CAD    | F +0.304(p3.5e-06) | R +0.290(p1.8e-02) | Q3.40 I20.71 n94
+       BMI->HF     | F +0.490(p2.5e-15) | R +0.491(p4.4e-15) | Q1.01 I20.01 n95
+       BMI->Stroke | F +0.139(p1.1e-02) | R +0.139(p1.1e-02) | Q0.27 I20.00 n96
+       BMI->T2D    | F +0.936(p1.8e-52) | R +0.452(p4.3e-01) | Q16.18 I20.94 n97
+       HDL->CAD    | F -0.117(p4.3e-04) | R -0.117(p4.3e-04) | Q0.64 I20.00 n96
+       HDL->HF     | F -0.037(p1.7e-01) | R -0.039(p1.9e-01) | Q1.19 I20.16 n98
+       HDL->Stroke | F -0.022(p4.9e-01) | R -0.025(p5.1e-01) | Q1.39 I20.28 n100
+       HDL->T2D    | F -0.053(p1.4e-01) | R -0.053(p1.4e-01) | Q0.80 I20.00 n100
+     HbA1c->CAD    | F +0.038(p3.2e-01) | R +0.038(p3.2e-01) | Q0.32 I20.00 n53
+     HbA1c->HF     | F -0.130(p2.6e-03) | R -0.125(p3.8e-02) | Q1.92 I20.48 n56
+     HbA1c->Stroke | F -0.021(p5.9e-01) | R -0.021(p5.9e-01) | Q0.11 I20.00 n55
+     HbA1c->T2D    | F +1.279(p3.2e-22) | R +1.299(p2.1e-11) | Q2.10 I20.52 n55
+       LDL->CAD    | F +0.421(p5.0e-25) | R +0.440(p3.0e-11) | Q2.01 I20.50 n72
+       LDL->HF     | F +0.001(p9.8e-01) | R +0.001(p9.8e-01) | Q0.16 I20.00 n75
+       LDL->Stroke | F -0.002(p9.6e-01) | R -0.003(p9.4e-01) | Q1.22 I20.18 n75
+       LDL->T2D    | F -0.061(p7.2e-02) | R -0.061(p7.2e-02) | Q0.04 I20.00 n77
+       SBP->CAD    | F +0.646(p3.4e-09) | R +0.646(p3.4e-09) | Q0.36 I20.00 n49
+       SBP->HF     | F +0.667(p3.7e-12) | R +0.659(p9.5e-04) | Q4.32 I20.77 n49
+       SBP->Stroke | F +0.996(p1.4e-19) | R +0.996(p1.4e-19) | Q0.03 I20.00 n50
+       SBP->T2D    | F -0.076(p3.3e-01) | R -0.076(p3.3e-01) | Q0.00 I20.00 n51
+       T2D->BMI    | F -0.069(p4.5e-08) | R -0.071(p6.5e-03) | Q4.24 I20.76 n183
+       T2D->HDL    | F +0.009(p3.0e-01) | R +0.009(p7.4e-01) | Q7.82 I20.87 n182
+       T2D->HbA1c  | F +0.349(p7.6e-280) | R +0.351(p3.2e-109) | Q2.53 I20.60 n182
+       T2D->LDL    | F +0.012(p5.6e-02) | R +0.012(p5.6e-02) | Q0.10 I20.00 n182
+       T2D->TC     | F +0.010(p1.4e-01) | R +0.010(p1.4e-01) | Q0.15 I20.00 n182
+       T2D->TG     | F +0.005(p6.2e-01) | R +0.004(p8.7e-01) | Q4.93 I20.80 n182
+        TC->CAD    | F +0.387(p1.4e-19) | R +0.446(p2.3e-04) | Q5.26 I20.81 n112
+        TC->HF     | F -0.017(p6.8e-01) | R -0.017(p6.8e-01) | Q0.09 I20.00 n114
+        TC->Stroke | F -0.005(p8.9e-01) | R -0.005(p8.9e-01) | Q0.47 I20.00 n112
+        TC->T2D    | F -0.088(p6.8e-03) | R -0.088(p6.8e-03) | Q0.74 I20.00 n115
+        TG->CAD    | F +0.140(p1.0e-05) | R +0.149(p4.7e-02) | Q5.50 I20.82 n79
+        TG->HF     | F +0.010(p7.7e-01) | R +0.010(p7.7e-01) | Q0.09 I20.00 n82
+        TG->Stroke | F +0.027(p3.9e-01) | R +0.027(p3.9e-01) | Q0.04 I20.00 n82
+        TG->T2D    | F -0.037(p3.9e-01) | R -0.037(p3.9e-01) | Q0.10 I20.00 n83

@@ -1,0 +1,23 @@
+=== Adiposity distribution vs mass: WHR triangulation ===
+
+Three adiposity exposures against each outcome (IVW b [P]):
+  BMI       = overall mass
+  WHRadjBMI = central distribution, BMI-residualised (can be collider-biased; reviewer MAJOR-7)
+  WHR_unadj = central distribution retaining the mass component (this step)
+
+outcome  | BMI                    | WHRadjBMI              | WHR_unadj             
+---------------------------------------------------------------------------------- 
+CAD      | +0.3870 (P=1.3e-43)    | +0.2921 (P=9.0e-14)    | +0.4280 (P=3.3e-24)   
+HF       | +0.5246 (P=3.4e-153)   | +0.0120 (P=6.3e-01)    | +0.2648 (P=5.5e-18)   
+T2D      | +0.9903 (P=2.4e-55)    | +0.6872 (P=1.9e-18)    | +1.1460 (P=5.9e-41)   
+HFpEF    | +0.5852 (P=3.0e-52)    |         -              | +0.3134 (P=1.2e-07)   
+HFrEF    | +0.5651 (P=1.4e-35)    |         -              | +0.3623 (P=1.1e-06)   
+
+READ (interpret against the reviewer's collider caveat, do not over-read):
+- If WHR_unadj reaches HF/HFpEF/HFrEF while WHRadjBMI does not, the HF signal is carried by the
+  overall-mass component that BMI-adjustment removes - consistent with 'mass, not distribution',
+  but WHR_unadj and BMI share that mass component, so this triangulates rather than proves.
+- If WHR_unadj is ALSO null on HF, then central adiposity (with or without mass) does not reach
+  HF on this evidence, and the 'spares' language must be dropped entirely.
+- WHR_unadj includes UK Biobank, overlapping UKB-containing outcome GWAS; report the direction,
+  not the magnitude, and note the overlap.

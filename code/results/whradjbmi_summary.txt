@@ -1,0 +1,29 @@
+=== WHRadjBMI (Pulit 2019, EUR, build37) — adiposity-DISTRIBUTION exposure, 2026-07-19 ===
+Path B: BMI = overall adiposity; WHRadjBMI = central fat distribution independent of BMI.
+337 clumped instruments. Compare WHRadjBMI-> vs BMI-> for the cascade.
+
+outcome    WHRadjBMI->              BMI-> (main net)        
+CAD        +0.292 (p=9.0e-14)*      +0.387 (p=1.3e-43)*     
+T2D        +0.687 (p=1.9e-18)*      +0.990 (p=2.4e-55)*     
+HF         +0.012 (p=6.3e-01)       +0.525 (p=3.4e-153)*    
+niHF       -0.129 (p=2.7e-04)*      n/a                     
+niHFpEF    -0.045 (p=6.2e-01)       n/a                     
+niHFrEF    -0.024 (p=8.0e-01)       n/a                     
+
+FINDING: central fat distribution INDEPENDENTLY drives CAD (+0.29, p=9e-14) and T2D (+0.69,
+p=2e-18) -> the adiposity->CAD/T2D effects are not purely about overall mass; distribution matters.
+DISSOCIATION: WHRadjBMI does NOT drive heart failure (all-cause HF null p=0.63; niHF -0.13), while
+BMI drives HF strongly (+0.52, esp. HFpEF). So the adiposity->HF effect is carried by OVERALL
+adiposity/mass, not central distribution -> complements the HF-subtype finding (obesity->HFpEF).
+
+CAVEATS (disclose, load-bearing):
+1. COLLIDER: WHRadjBMI is WHR genetically adjusted for BMI; conditioning on a heritable covariate
+   can induce collider bias. The NEGATIVE WHRadjBMI->niHF (-0.13) is likely collider-induced, NOT
+   causal -> do NOT interpret the inverse HF association as protective; report as null-to-inverse
+   with the collider caveat. The positive CAD/T2D effects are robust and directionally standard.
+2. UKB OVERLAP: WHRadjBMI (GIANT+UKBB) shares UK Biobank with the CAD (Aragam2022), HF (HERMES) AND
+   T2D (Xue2018, GCST006867) outcome GWAS -> exposure-outcome sample overlap biases toward
+   observational. This applies to BOTH headline positives (WHRadjBMI->CAD and ->T2D). Direction is
+   more robust than magnitude; the UKB-free outcome sensitivity is the clean follow-up if kept
+   (UKB-free T2D = data/uploads/eur_noukb/T2D_Mahajan_noUKB_rsid.txt already in hand).
+Results: results/network_whradjbmi.csv.

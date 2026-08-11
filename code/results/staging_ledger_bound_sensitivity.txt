@@ -1,0 +1,35 @@
+=== Bound sensitivity of the native-scale staging ledger ===
+
+Negligibility bounds are clinical judgements, so every verdict is reported across a sweep of them.
+Scenario bounds (binary log-odds / SBP mmHg / other per-SD):
+  very tight  OR 1.01 / 0.5 mmHg / 0.02 SD
+  tight       OR 1.02 / 0.5 mmHg / 0.02 SD
+  PRIMARY     OR 1.05 / 1 mmHg / 0.05 SD
+  loose       OR 1.10 / 2 mmHg / 0.10 SD
+  very loose  OR 1.20 / 5 mmHg / 0.20 SD
+
+VERDICT COUNTS BY SCENARIO
+scenario     CONCORDANT     INDETERMINATE  DISCORDANT     DISC_CAVEATED
+-----------------------------------------------------------------------
+very tight   6              5              2              2            
+tight        6              5              2              2            
+PRIMARY      7              4              2              2            
+loose        8              4              2              1            
+very loose   11             2              2              0            
+
+BOUND-STABLE (7/15): BMI->HF, LDL->CAD, LDL->HF, HbA1c->T2D, T2D->HF, T2D->Stroke, CAD->HF
+BOUND-SENSITIVE (8/15): BMI->T2D, BMI->CAD, BMI->Stroke, SBP->CAD, SBP->HF, SBP->Stroke, HbA1c->CAD, T2D->CAD
+
+THE LOAD-BEARING CLAIM IS BOUND-INVARIANT. The ledger's falsification claim is not the concordant
+count but the direction of every reverse effect that is real. Under every scenario above, each
+transition in the discordant family has a reverse edge running from a stage-4 disease into a
+stage-2 trait — feedback or an index-event effect — and none reverses the staging order:
+  very tight  n=4  SBP->CAD (reverse CAD->SBP, stage 4->2); T2D->CAD (reverse CAD->T2D, stage 4->2); T2D->HF (reverse HF->T2D, stage 4->2); T2D->Stroke (reverse Stroke->T2D, stage 4->2)
+  tight       n=4  SBP->CAD (reverse CAD->SBP, stage 4->2); T2D->CAD (reverse CAD->T2D, stage 4->2); T2D->HF (reverse HF->T2D, stage 4->2); T2D->Stroke (reverse Stroke->T2D, stage 4->2)
+  PRIMARY     n=4  SBP->CAD (reverse CAD->SBP, stage 4->2); T2D->CAD (reverse CAD->T2D, stage 4->2); T2D->HF (reverse HF->T2D, stage 4->2); T2D->Stroke (reverse Stroke->T2D, stage 4->2)
+  loose       n=3  T2D->CAD (reverse CAD->T2D, stage 4->2); T2D->HF (reverse HF->T2D, stage 4->2); T2D->Stroke (reverse Stroke->T2D, stage 4->2)
+  very loose  n=2  T2D->HF (reverse HF->T2D, stage 4->2); T2D->Stroke (reverse Stroke->T2D, stage 4->2)
+
+What DOES move is the concordant/indeterminate split, which is why the counts are reported as
+bound-conditional. Tightening the bound makes an excluded reverse effect harder to declare;
+loosening it makes a supported reverse effect harder to declare.

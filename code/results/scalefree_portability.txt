@@ -1,0 +1,56 @@
+=== Scale-free cross-ancestry concordance ===
+
+Edges touching HbA1c or eGFR are excluded throughout (scale dictionary: non-comparable).
+SBP needs care, and the first draft of this script got it wrong:
+  * SIGN concordance and the Z-STATISTIC (b/se) are genuinely scale-free - b and se rescale
+    together - so SBP edges are KEPT for those two.
+  * SPEARMAN and PEARSON are computed over a POOLED set, so rescaling one subset changes the
+    pooled ranking too; neither is scale-free here. SBP is therefore CONVERTED (x19.3) for
+    those two, and a no-SBP variant is also reported to reproduce the shipped 0.681/0.657.
+
+--- all comparable common edges ---
+  SCALE-FREE, over ALL 101 common edges (no comparability filter):
+    sign concordance                  : 62/101 = 0.614
+    z-statistic (b/se) correlation    : +0.599
+  same statistics restricted to the  65 magnitude-eligible edges (for contrast only):
+    sign concordance                  : 42/65 = 0.646
+    z-statistic correlation           : +0.765
+  MAGNITUDE statistics (comparability filter REQUIRED), n = 65:
+    Spearman rank [SBP converted]     : +0.575
+    Pearson       [SBP converted]     : +0.659
+    Pearson       [SBP dropped, n= 56] : +0.681   <- shipped definition
+    node-level bootstrap 95% CI, sign concordance : [+0.429, +0.778]   includes chance
+    node-level bootstrap 95% CI, Spearman rank    : [+0.049, +0.923]
+    node-level bootstrap 95% CI, z-statistic corr : [+0.410, +0.878]
+
+--- European-Bonferroni-significant subset ---
+  SCALE-FREE, over ALL  52 common edges (no comparability filter):
+    sign concordance                  : 36/52 = 0.692
+    z-statistic (b/se) correlation    : +0.587
+  same statistics restricted to the  41 magnitude-eligible edges (for contrast only):
+    sign concordance                  : 29/41 = 0.707
+    z-statistic correlation           : +0.800
+  MAGNITUDE statistics (comparability filter REQUIRED), n = 41:
+    Spearman rank [SBP converted]     : +0.606
+    Pearson       [SBP converted]     : +0.633
+    Pearson       [SBP dropped, n= 37] : +0.657   <- shipped definition
+    node-level bootstrap 95% CI, sign concordance : [+0.450, +0.917]   includes chance
+    node-level bootstrap 95% CI, Spearman rank    : [-0.071, +0.952]   includes chance
+    node-level bootstrap 95% CI, z-statistic corr : [+0.438, +0.920]
+
+READ:
+- The shipped magnitude definition (comparable edges, SBP dropped) is REPRODUCED exactly:
+  0.681 over 56 edges and 0.657 over 37. Implementation and shipped number agree.
+- CORRECTION to an earlier draft of this script: it computed the scale-free statistics on the
+  magnitude-ELIGIBLE subset, i.e. on a set selected by a scale criterion, which is self-
+  defeating. Over all 101 common edges the sign concordance is 0.614 and 0.692, which are
+  EXACTLY the manuscript's shipped values in results/h3_portability.txt - so there is one
+  number for this statistic, not two.
+- The z-statistic correlation FALLS when the excluded edges are restored (+0.77 -> +0.60 and
+  +0.80 -> +0.59), i.e. below the magnitude correlation, so the earlier claim that it was
+  'the highest of the three' was an artifact of the filter. It is also largely a shared-POWER
+  statistic - correlating |z| alone recovers nearly the same value - and is dominated by
+  near-definitional lipid edges (LDL->TC carries z_EUR = 71.7). Report it as supportive at
+  most, never as evidence of stronger portability.
+- Cohort-specific SDs are not recoverable from the published summary statistics on either
+  side, which is why a sign-level reading is the defensible one for the non-comparable traits.

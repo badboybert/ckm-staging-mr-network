@@ -1,0 +1,27 @@
+{
+  "title": "Adiposity-centred causal architecture of cardiovascular–kidney–metabolic traits: a cross-ancestry Mendelian-randomization study of coronary disease and heart failure: analysis code and frozen source data",
+  "upload_type": "software",
+  "license": "cc-by-4.0",
+  "creators": [
+    {
+      "name": "Tan, Bertrand Chin-Ming",
+      "affiliation": "Department of Biomedical Sciences, College of Medicine, Chang Gung University, Taoyuan City 33302, Taiwan",
+      "orcid": "0000-0002-2218-7115"
+    }
+  ],
+  "description": "Analysis code and frozen derived data for a genome-wide bidirectional Mendelian-randomization network of all 132 directed edges among 12 cardiovascular-kidney-metabolic traits, tested against the AHA CKM staging order and evaluated for portability in two East Asian hospital biobanks and one population cohort. Third-party GWAS summary statistics are NOT redistributed here: they are available from their original consortia and the GWAS Catalog under the accessions listed in the manuscript, and the TPMI, Taiwan Biobank and KoGES statistics are available under their respective controlled-access procedures. Every figure and supplementary table is regenerated from the derived files in this deposit.",
+  "keywords": [
+    "Mendelian randomization",
+    "cardiovascular-kidney-metabolic",
+    "AHA CKM staging",
+    "multivariable MR",
+    "mediation",
+    "cross-ancestry",
+    "Biobank Japan",
+    "Taiwan Precision Medicine Initiative",
+    "heart failure",
+    "coronary artery disease"
+  ],
+  "access_right": "open",
+  "notes": "[AUTHOR-SUPPLIED — add co-authors with ORCIDs and any grant numbers before releasing.]"
+}

@@ -1,0 +1,80 @@
+=== MR-PRESSO across every Bonferroni-significant edge ===
+
+Network Bonferroni = 0.05/132 = 3.788e-04; 59 edges significant.
+Swept: 59 edges (10 full outlier+distortion, 49 global test only).
+Tiering rule: full MR-PRESSO for <=130 harmonised instruments; above that the outlier and
+distortion tests are O(NbDistribution * nSNP^2) and only the global test is run.
+
+Global pleiotropy test P < 0.05 in 59/59 edges.
+(A significant global test indicates heterogeneity/outliers, not necessarily a biased estimate.)
+
+Among the 10 fully-tested edges: 10 have >=1 outlier; distortion P<0.05 in 5.
+
+Edges whose estimate is DISTORTED by outliers (distortion P<0.05):
+  HF->CAD  raw +0.8069 -> corrected +0.5088  (13 outliers, distortion P=<0.001)
+  HF->Stroke  raw +0.3781 -> corrected +0.2666  (5 outliers, distortion P=0.001)
+  T2D->HbA1c  raw +0.2793 -> corrected +0.2658  (16 outliers, distortion P=0.038)
+  T2D->HDL  raw -0.0714 -> corrected -0.0520  (52 outliers, distortion P=<0.001)
+  T2D->SBP  raw +0.7552 -> corrected +0.6368  (23 outliers, distortion P=0.034)
+
+FULL TABLE (sorted by global-test P):
+edge             tier           nSNP        raw b  corrected b   globalP  distortP
+Stroke->HF       full             23       0.3007       0.2858    <0.001     0.537
+HF->CAD          full             45       0.8069       0.5088    <0.001    <0.001
+HF->Stroke       full             45       0.3781       0.2666    <0.001     0.001
+T2D->HbA1c       full            110       0.2793       0.2658    <0.001     0.038
+T2D->HF          full            115       0.0525       0.0479    <0.001     0.591
+T2D->CAD         full            116       0.1290       0.1153    <0.001     0.217
+T2D->HDL         full            116      -0.0714      -0.0520    <0.001    <0.001
+T2D->SBP         full            116       0.7552       0.6368    <0.001     0.034
+T2D->Stroke      full            116       0.0805       0.0749    <0.001     0.609
+CAD->T2D         full            128       0.1675       0.1467    <0.001     0.375
+CAD->SBP         global_only     167       1.8194            -    <0.001         -
+CAD->Stroke      global_only     168       0.1711            -    <0.001         -
+CAD->HF          global_only     171       0.2851            -    <0.001         -
+CAD->TC          global_only     174       0.1941            -    <0.001         -
+CAD->LDL         global_only     175       0.2462            -    <0.001         -
+HbA1c->T2D       global_only     198       1.0610            -    <0.001         -
+HbA1c->Stroke    global_only     289       0.1128            -    <0.001         -
+TG->T2D          global_only     296       0.5943            -    <0.001         -
+HDL->T2D         global_only     306      -0.4875            -    <0.001         -
+SBP->T2D         global_only     334       0.0172            -    <0.001         -
+HbA1c->CAD       global_only     336       0.1838            -    <0.001         -
+HbA1c->LDL       global_only     342       0.1310            -    <0.001         -
+HbA1c->TC        global_only     342       0.1338            -    <0.001         -
+HbA1c->TG        global_only     342       0.0687            -    <0.001         -
+LDL->HF          global_only     379       0.1215            -    <0.001         -
+LDL->eGFR        global_only     381       0.0079            -    <0.001         -
+TG->SBP          global_only     416       1.7514            -    <0.001         -
+TG->HbA1c        global_only     428       0.1023            -    <0.001         -
+TG->Stroke       global_only     430       0.0974            -    <0.001         -
+SBP->HF          global_only     431       0.0199            -    <0.001         -
+SBP->Stroke      global_only     434       0.0269            -    <0.001         -
+SBP->CAD         global_only     436       0.0336            -    <0.001         -
+HDL->SBP         global_only     439      -0.9169            -    <0.001         -
+TC->HF           global_only     445       0.0895            -    <0.001         -
+TG->HF           global_only     446       0.1091            -    <0.001         -
+HDL->Stroke      global_only     448      -0.0999            -    <0.001         -
+BMI->HbA1c       global_only     453       0.2251            -    <0.001         -
+TC->eGFR         global_only     458       0.0087            -    <0.001         -
+BMI->T2D         global_only     463       0.9903            -    <0.001         -
+HDL->HF          global_only     476      -0.1235            -    <0.001         -
+LDL->CAD         global_only     483       0.5109            -    <0.001         -
+BMI->HF          global_only     501       0.5246            -    <0.001         -
+BMI->CAD         global_only     504       0.3870            -    <0.001         -
+BMI->Stroke      global_only     504       0.1513            -    <0.001         -
+BMI->HDL         global_only     505      -0.2752            -    <0.001         -
+BMI->TG          global_only     505       0.2051            -    <0.001         -
+TG->CAD          global_only     513       0.3927            -    <0.001         -
+TG->HDL          global_only     531      -0.5979            -    <0.001         -
+TG->LDL          global_only     531       0.2768            -    <0.001         -
+TG->TC           global_only     531       0.3470            -    <0.001         -
+LDL->TC          global_only     532       0.9086            -    <0.001         -
+LDL->TG          global_only     532       0.2169            -    <0.001         -
+TC->CAD          global_only     534       0.4340            -    <0.001         -
+HDL->CAD         global_only     557      -0.3053            -    <0.001         -
+TC->LDL          global_only     563       0.9344            -    <0.001         -
+TC->TG           global_only     563       0.3183            -    <0.001         -
+TC->HDL          global_only     565       0.2152            -    <0.001         -
+HDL->TC          global_only     578       0.1554            -    <0.001         -
+HDL->TG          global_only     578      -0.5121            -    <0.001         -

@@ -1,0 +1,141 @@
+=== Cross-ancestry interaction tests over a FORMALLY DEFINED family ===
+EAS = Biobank Japan. z=(b_EUR-b_EAS)/sqrt(se_EUR^2+se_EAS^2), two-sided.
+
+FAMILY DEFINITION (declared before inspecting any P):
+  common estimable edges (both ancestries)     : 101
+  magnitude-eligible (neither endpoint HbA1c/eGFR): 65
+  + renal edges from zheng_ckd.txt              : 2
+  = INTERACTION FAMILY                          : 67
+  sign-only (HbA1c/eGFR endpoint; NO beta-difference P): 36
+  Bonferroni threshold 0.05/67 = 7.463e-04
+
+edge             EUR b(se)            EAS b(se)                  z      P_int       FDR  flag
+TG->LDL          +0.277(0.025)        -0.115(0.051)           6.86  6.958e-12 4.662e-10  BONFERRONI
+CAD->HF          +0.285(0.012)        +0.073(0.031)           6.39  1.619e-10 5.422e-09  BONFERRONI
+TG->T2D          +0.594(0.080)        -0.053(0.066)           6.25  4.032e-10 9.006e-09  BONFERRONI
+HDL->T2D         -0.488(0.059)        -0.021(0.051)          -6.01  1.908e-09 3.196e-08  BONFERRONI
+LDL->TC          +0.909(0.013)        +0.616(0.048)           5.88  4.143e-09 5.551e-08  BONFERRONI
+T2D->HDL         -0.071(0.017)        +0.034(0.013)          -4.97  6.804e-07 7.597e-06  BONFERRONI
+T2D->Stroke      +0.080(0.013)        -0.013(0.015)           4.72  2.355e-06 2.254e-05  BONFERRONI
+T2D->BMI         +0.010(0.018)        -0.098(0.019)           4.16  3.188e-05 2.670e-04  BONFERRONI
+BMI->T2D         +0.990(0.063)        -0.153(0.278)           4.01  5.976e-05 4.449e-04  BONFERRONI
+T2D->HF          +0.052(0.013)        -0.037(0.021)           3.58  3.464e-04 2.321e-03  BONFERRONI
+LDL->TG          +0.217(0.030)        -0.215(0.120)           3.49  4.777e-04 2.589e-03  BONFERRONI
+CAD->T2D         +0.168(0.035)        +0.020(0.024)           3.48  4.940e-04 2.589e-03  BONFERRONI
+SBP->HF          +0.384(0.030)        +0.857(0.133)          -3.48  5.023e-04 2.589e-03  BONFERRONI [SBP->per-SD]
+SBP->T2D         +0.331(0.060)        -0.076(0.102)           3.45  5.593e-04 2.677e-03  BONFERRONI [SBP->per-SD]
+TG->TC           +0.347(0.026)        +0.123(0.062)           3.31  9.189e-04 4.104e-03  FDR<0.05
+CAD->Stroke      +0.171(0.020)        -0.006(0.050)           3.29  9.871e-04 4.133e-03  FDR<0.05
+T2D->TG          +0.068(0.024)        -0.019(0.015)           3.08  2.079e-03 8.192e-03  FDR<0.05
+HDL->CAD         -0.305(0.027)        -0.144(0.047)          -2.98  2.917e-03 1.086e-02  FDR<0.05
+TG->CAD          +0.393(0.031)        +0.226(0.049)           2.89  3.841e-03 1.354e-02  FDR<0.05
+TG->BMI          +0.068(0.042)        -0.062(0.019)           2.78  5.395e-03 1.718e-02  FDR<0.05
+SBP->LDL         -0.039(0.019)        -0.244(0.071)           2.78  5.497e-03 1.718e-02  FDR<0.05 [SBP->per-SD]
+HDL->HF          -0.123(0.020)        -0.018(0.032)          -2.77  5.640e-03 1.718e-02  FDR<0.05
+HDL->TG          -0.512(0.027)        -0.267(0.087)          -2.69  7.094e-03 2.066e-02  FDR<0.05
+T2D->CAD         +0.129(0.022)        +0.054(0.018)           2.67  7.474e-03 2.087e-02  FDR<0.05
+SBP->Stroke      +0.518(0.034)        +0.973(0.170)          -2.63  8.585e-03 2.301e-02  FDR<0.05 [SBP->per-SD]
+SBP->TC          -0.029(0.017)        -0.115(0.028)           2.61  8.957e-03 2.308e-02  FDR<0.05 [SBP->per-SD]
+LDL->HF          +0.121(0.020)        -0.011(0.047)           2.57  1.012e-02 2.512e-02  FDR<0.05
+HDL->Stroke      -0.100(0.022)        +0.005(0.039)          -2.37  1.789e-02 4.281e-02  FDR<0.05
+TG->HF           +0.109(0.024)        +0.002(0.040)           2.28  2.262e-02 5.225e-02  
+TC->BMI          -0.023(0.025)        -0.102(0.025)           2.21  2.676e-02 5.977e-02  
+HDL->BMI         -0.068(0.032)        +0.011(0.018)          -2.18  2.949e-02 6.375e-02  
+BMI->CAD         +0.387(0.028)        +0.162(0.101)           2.14  3.199e-02 6.699e-02  
+TC->HF           +0.090(0.020)        -0.028(0.056)           2.00  4.599e-02 9.337e-02  
+CAD->TC          +0.194(0.041)        +0.070(0.050)           1.92  5.485e-02 1.040e-01  
+SBP->TG          +0.035(0.019)        -0.056(0.044)           1.91  5.590e-02 1.040e-01  [SBP->per-SD]
+LDL->Stroke      +0.070(0.023)        -0.052(0.060)           1.91  5.591e-02 1.040e-01  
+SBP->BMI         -0.056(0.030)        +0.074(0.062)          -1.89  5.877e-02 1.064e-01  [SBP->per-SD]
+LDL->BMI         -0.012(0.022)        -0.068(0.021)           1.85  6.394e-02 1.127e-01  
+SBP->HDL         -0.021(0.018)        +0.268(0.156)          -1.84  6.636e-02 1.140e-01  [SBP->per-SD]
+BMI->CKD         +0.143(0.029)        +0.408(0.144)          -1.81  7.086e-02 1.187e-01  
+CAD->LDL         +0.246(0.050)        +0.088(0.078)           1.71  8.700e-02 1.422e-01  
+TC->TG           +0.318(0.027)        +0.111(0.127)           1.60  1.098e-01 1.751e-01  
+TC->HDL          +0.215(0.035)        +0.511(0.187)          -1.56  1.192e-01 1.857e-01  
+BMI->HDL         -0.275(0.017)        -0.193(0.050)          -1.54  1.230e-01 1.873e-01  
+TC->CAD          +0.434(0.031)        +0.582(0.095)          -1.48  1.394e-01 2.047e-01  
+TG->Stroke       +0.097(0.024)        +0.031(0.038)           1.47  1.405e-01 2.047e-01  
+CAD->BMI         -0.005(0.018)        -0.032(0.013)           1.24  2.144e-01 3.057e-01  
+TC->Stroke       +0.032(0.022)        -0.026(0.046)           1.13  2.572e-01 3.590e-01  
+BMI->HF          +0.525(0.020)        +0.451(0.073)           0.97  3.305e-01 4.436e-01  
+BMI->TG          +0.205(0.020)        +0.164(0.037)           0.97  3.311e-01 4.436e-01  
+T2D->TC          -0.003(0.013)        +0.013(0.010)          -0.93  3.516e-01 4.602e-01  
+T2D->LDL         +0.001(0.011)        +0.015(0.011)          -0.92  3.572e-01 4.602e-01  
+TG->HDL          -0.598(0.035)        -0.470(0.158)          -0.79  4.295e-01 5.354e-01  
+SBP->CKD         +0.276(0.033)        +0.098(0.224)           0.79  4.315e-01 5.354e-01  [SBP->per-SD]
+BMI->TC          -0.052(0.021)        -0.023(0.032)          -0.76  4.444e-01 5.413e-01  
+HDL->LDL         -0.045(0.027)        -0.103(0.077)           0.70  4.850e-01 5.803e-01  
+CAD->HDL         -0.105(0.035)        -0.072(0.051)          -0.53  5.983e-01 6.779e-01  
+SBP->CAD         +0.648(0.046)        +0.527(0.226)           0.52  6.004e-01 6.779e-01  [SBP->per-SD]
+LDL->T2D         -0.008(0.058)        -0.051(0.061)           0.52  6.032e-01 6.779e-01  
+BMI->LDL         -0.021(0.022)        +0.002(0.038)          -0.51  6.070e-01 6.779e-01  
+HDL->TC          +0.155(0.027)        +0.174(0.056)          -0.29  7.686e-01 8.419e-01  
+LDL->HDL         -0.076(0.033)        -0.114(0.131)           0.28  7.791e-01 8.419e-01  
+CAD->TG          +0.056(0.031)        +0.038(0.079)           0.21  8.352e-01 8.882e-01  
+LDL->CAD         +0.511(0.033)        +0.527(0.085)          -0.18  8.610e-01 9.013e-01  
+TC->LDL          +0.934(0.014)        +0.943(0.111)          -0.08  9.379e-01 9.530e-01  
+BMI->Stroke      +0.151(0.025)        +0.157(0.065)          -0.08  9.392e-01 9.530e-01  
+TC->T2D          -0.041(0.045)        -0.045(0.060)           0.06  9.530e-01 9.530e-01  
+
+Bonferroni-significant over the full family (0.05/67): ['TG->LDL', 'CAD->HF', 'TG->T2D', 'HDL->T2D', 'LDL->TC', 'T2D->HDL', 'T2D->Stroke', 'T2D->BMI', 'BMI->T2D', 'T2D->HF', 'LDL->TG', 'CAD->T2D', 'SBP->HF', 'SBP->T2D']
+  of which OPPOSITE POINT-ESTIMATE SIGN: 9 - ['TG->LDL', 'TG->T2D', 'T2D->HDL', 'T2D->Stroke', 'T2D->BMI', 'BMI->T2D', 'T2D->HF', 'LDL->TG', 'SBP->T2D']
+    of those, significant in BOTH ancestries (the defensible 'sign reversal' set): 2 - ['T2D->HDL', 'TG->LDL']
+    The remainder flip against an estimate indistinguishable from zero on one side and must
+    NOT be reported as demonstrated reversals.
+  of which SAME-SIGN magnitude differences: 5 - ['CAD->HF', 'HDL->T2D', 'LDL->TC', 'CAD->T2D', 'SBP->HF']
+BH-FDR<0.05 over the full family: ['TG->LDL', 'CAD->HF', 'TG->T2D', 'HDL->T2D', 'LDL->TC', 'T2D->HDL', 'T2D->Stroke', 'T2D->BMI', 'BMI->T2D', 'T2D->HF', 'LDL->TG', 'CAD->T2D', 'SBP->HF', 'SBP->T2D', 'TG->TC', 'CAD->Stroke', 'T2D->TG', 'HDL->CAD', 'TG->CAD', 'TG->BMI', 'SBP->LDL', 'HDL->HF', 'HDL->TG', 'T2D->CAD', 'SBP->Stroke', 'SBP->TC', 'LDL->HF', 'HDL->Stroke']
+
+SIGN-ONLY EDGES (scale-non-comparable; magnitude difference NOT interpretable):
+edge                  EUR b      EAS b  sign
+BMI->HbA1c           +0.225     -0.234  OPPOSITE  (both nominally significant)
+BMI->eGFR            -0.003     -0.072  concordant
+CAD->HbA1c           +0.031     +0.002  concordant
+CAD->eGFR            -0.001     +0.006  OPPOSITE
+HDL->HbA1c           -0.047     -0.044  concordant
+HDL->eGFR            +0.001     +0.036  concordant
+HbA1c->BMI           +0.004     -0.303  OPPOSITE
+HbA1c->CAD           +0.184     +0.067  concordant
+HbA1c->HDL           -0.014     +0.124  OPPOSITE
+HbA1c->HF            +0.048     -0.180  OPPOSITE  (both nominally significant)
+HbA1c->LDL           +0.131     +0.031  concordant
+HbA1c->Stroke        +0.113     -0.031  OPPOSITE
+HbA1c->T2D           +1.061     +1.512  concordant  (both nominally significant)
+HbA1c->TC            +0.134     +0.068  concordant  (both nominally significant)
+HbA1c->TG            +0.069     -0.091  OPPOSITE  (both nominally significant)
+HbA1c->eGFR          -0.001     -0.004  concordant
+LDL->HbA1c           +0.089     +0.047  concordant
+LDL->eGFR            +0.008     +0.023  concordant
+SBP->HbA1c           +0.001     -0.200  OPPOSITE
+SBP->eGFR            -0.000     +0.057  OPPOSITE
+T2D->HbA1c           +0.279     +0.337  concordant  (both nominally significant)
+T2D->eGFR            -0.000     +0.016  OPPOSITE
+TC->HbA1c            +0.090     -0.005  OPPOSITE
+TC->eGFR             +0.009     +0.064  concordant  (both nominally significant)
+TG->HbA1c            +0.102     -0.047  OPPOSITE
+TG->eGFR             +0.003     +0.023  concordant
+eGFR->BMI            -0.518     -0.097  concordant  (both nominally significant)
+eGFR->CAD            +0.090     -0.036  OPPOSITE
+eGFR->HDL            +0.117     +0.176  concordant
+eGFR->HF             +0.124     +0.016  concordant
+eGFR->HbA1c          -0.200     -0.021  concordant
+eGFR->LDL            +0.253     -0.031  OPPOSITE
+eGFR->Stroke         -0.099     +0.155  OPPOSITE
+eGFR->T2D            +0.398     +0.027  concordant
+eGFR->TC             +0.274     +0.028  concordant
+eGFR->TG             +0.011     -0.011  OPPOSITE
+  -> 16/36 opposite-sign, of which 3 are nominally significant in BOTH.
+     These are reported as sign discordance only. No interaction P-value is computed for them.
+
+SBP_SD SENSITIVITY (the per-SD conversion is a generic approximation, not a cohort SD):
+  SD= 15.0 mmHg : SBP->BMI P=0.076; SBP->CAD P=0.918; SBP->HDL P=0.070; SBP->HF P=0.000; SBP->LDL P=0.003; SBP->Stroke P=0.001; SBP->T2D P=0.003; SBP->TC P=0.003; SBP->TG P=0.071; SBP->CKD P=0.605
+  SD= 17.0 mmHg : SBP->BMI P=0.067; SBP->CAD P=0.849; SBP->HDL P=0.068; SBP->HF P=0.000; SBP->LDL P=0.004; SBP->Stroke P=0.003; SBP->T2D P=0.001; SBP->TC P=0.005; SBP->TG P=0.063; SBP->CKD P=0.520
+  SD= 19.3 mmHg : SBP->BMI P=0.059; SBP->CAD P=0.600; SBP->HDL P=0.066; SBP->HF P=0.001; SBP->LDL P=0.005; SBP->Stroke P=0.009; SBP->T2D P=0.001; SBP->TC P=0.009; SBP->TG P=0.056; SBP->CKD P=0.431
+  SD= 21.0 mmHg : SBP->BMI P=0.054; SBP->CAD P=0.442; SBP->HDL P=0.065; SBP->HF P=0.001; SBP->LDL P=0.007; SBP->Stroke P=0.018; SBP->T2D P=0.000; SBP->TC P=0.013; SBP->TG P=0.051; SBP->CKD P=0.372
+  SD= 23.0 mmHg : SBP->BMI P=0.049; SBP->CAD P=0.292; SBP->HDL P=0.063; SBP->HF P=0.004; SBP->LDL P=0.008; SBP->Stroke P=0.042; SBP->T2D P=0.000; SBP->TC P=0.020; SBP->TG P=0.047; SBP->CKD P=0.310
+  -> the renal ancestry comparison is NOT sensitive to the assumed SBP SD over this range.
+
+READ:
+- Correcting over the full 67-edge eligible family instead of 7 post-selected edges, 14 edge(s) survive Bonferroni.
+- The three HbA1c edges previously counted among 'five genuine sign reversals' are removed from the interaction family entirely: their EUR and EAS estimands are on different scales, so a beta difference is not interpretable. Their SIGN discordance is retained descriptively.
+- Sign flips are invariant to positive rescaling, so sign-level statements remain valid for the non-comparable traits; magnitude and P-value statements do not.

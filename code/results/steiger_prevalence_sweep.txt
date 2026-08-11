@@ -1,0 +1,52 @@
+=== Liability-scale Steiger sensitivity to assumed prevalence ===
+Every staging-graph edge involving a binary trait, swept over a clinically plausible
+prevalence grid for each binary side. Steiger direction = sum(r^2 exposure) > sum(r^2 outcome).
+
+Prevalence grids swept:
+  CAD     base 0.060   grid 0.030, 0.045, 0.060, 0.080, 0.100
+  HF      base 0.020   grid 0.010, 0.015, 0.020, 0.035, 0.050
+  T2D     base 0.100   grid 0.050, 0.075, 0.100, 0.125, 0.150
+  Stroke  base 0.050   grid 0.020, 0.035, 0.050, 0.065, 0.080
+  CKD     base 0.090   grid 0.050, 0.070, 0.090, 0.120, 0.150   [NOT EXERCISED - no staging-graph edge involves this trait]
+
+edges swept: 34   |   direction-STABLE across the whole grid: 34   |   FLIPPING: 0
+
+edge             cross  direction  n_comb   n_TRUE  verdict
+BMI->CAD         True   forward         5        5  stable
+BMI->HF          True   forward         5        5  stable
+BMI->Stroke      True   forward         5        5  stable
+BMI->T2D         True   forward         5        5  stable
+CAD->SBP         True   backward        5        5  stable
+CAD->T2D         True   backward       25       25  stable
+CAD->HF          False  intra          25       25  stable
+CAD->Stroke      False  intra          25       25  stable
+HDL->CAD         True   forward         5        5  stable
+HDL->HF          True   forward         5        5  stable
+HDL->Stroke      True   forward         5        5  stable
+HDL->T2D         False  intra           5        5  stable
+HF->Stroke       False  intra          25       25  stable
+HbA1c->CAD       True   forward         5        5  stable
+HbA1c->Stroke    True   forward         5        5  stable
+HbA1c->T2D       False  intra           5        5  stable
+LDL->CAD         True   forward         5        5  stable
+LDL->HF          True   forward         5        5  stable
+SBP->CAD         True   forward         5        5  stable
+SBP->HF          True   forward         5        5  stable
+SBP->Stroke      True   forward         5        5  stable
+SBP->T2D         False  intra           5        5  stable
+Stroke->HF       False  intra          25       25  stable
+T2D->CAD         True   forward        25       25  stable
+T2D->HF          True   forward        25       25  stable
+T2D->Stroke      True   forward        25       25  stable
+T2D->HDL         False  intra           5        5  stable
+T2D->SBP         False  intra           5        5  stable
+TC->CAD          True   forward         5        5  stable
+TC->HF           True   forward         5        5  stable
+TG->CAD          True   forward         5        5  stable
+TG->HF           True   forward         5        5  stable
+TG->Stroke       True   forward         5        5  stable
+TG->T2D          False  intra           5        5  stable
+
+BASE-PREVALENCE CALLS (the values the shipped analysis uses):
+  34 edges at base prevalence; Steiger-correct in 34
+  none

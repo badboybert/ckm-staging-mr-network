@@ -1,0 +1,11 @@
+# Derived by scripts/build_repo.py from the imports in code/. Python 3.12 was used.
+PIL
+REFERENCES_MASTER
+networkx
+numpy
+openpyxl
+pyliftover
+pypdf
+python-docx
+scipy
+the

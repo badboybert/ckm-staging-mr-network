@@ -1,0 +1,17 @@
+=== Marker-type audit of the SBP outcome GWAS (Evangelou et al. 2018) ===
+
+source  : SBP_Evangelou2018_EUR.txt.gz
+columns : MarkerName Allele1 Allele2 Freq1 Effect StdErr P TotalSampleSize N_effective
+records : 7,088,121
+
+marker type (from the MarkerName suffix):
+  SNP         7,088,121   100.0000%
+
+WHY THIS IS REPORTED:
+  Script 62 found 0 allele mismatches and 0 non-SNV matches among 3,156 matched variants across
+  the X->SBP edges. That is a real result, but it is PARTLY STRUCTURAL: with only SNP-typed
+  markers in the outcome file (7,088,121 of 7,088,121), an indel or multiallelic mismatch cannot occur
+  by construction. With 0 mismatches and 0 strand flips, the 'strict' instrument set therefore
+  differs from the primary one ONLY by dropping the 454 palindromic variants -- it tests
+  palindrome exclusion, not allele matching, and the manuscript says so rather than describing
+  the QC as passed.

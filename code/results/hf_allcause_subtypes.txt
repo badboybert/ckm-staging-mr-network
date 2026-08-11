@@ -1,0 +1,45 @@
+=== All-aetiology HFpEF / HFrEF MR (Enzan 2025, PMID 41184235) ===
+HFpEF = GCST90654629 (N=483,263; 26,743 cases: 19,589 EUR + 7,154 EAS);
+HFrEF = GCST90654628 (N=480,269; 23,749 cases: 19,495 EUR + 4,254 EAS). CROSS-ANCESTRY, build37.
+This REPLACES the non-ischemic specificity analysis (Henry 2025, 3,590/4,975 cases) that
+reviewer BLOCKER-2 called circular: CAD is NOT excluded from these all-aetiology outcomes, so a
+null CAD->HFpEF edge is evidence, not case-definition.
+PROVENANCE: EUR+EAS meta-analyses (NOT EUR-only). EUR instruments on a ~42%-EAS outcome attenuate
+rather than inflate, so flips are conservative; EAS controls overlap the paper's BBJ HF outcome
+GCST90668009. Report DIRECTIONS, not magnitudes.
+
+Within-family Bonferroni = 0.05/16 = 3.125e-03
+
+exposure subtype  nSNP      IVW b     IVW se      IVW P  sig
+BMI      HFpEF     328    +0.5852     0.0385   3.04e-52  *
+CAD      HFpEF     117    +0.1634     0.0227   6.25e-13  *
+TC       HFpEF     244    +0.0940     0.0385   1.45e-02  
+LDL      HFpEF     204    +0.0939     0.0419   2.51e-02  
+TG       HFpEF     247    +0.0665     0.0414   1.09e-01  
+HbA1c    HFpEF     171    +0.0228     0.0399   5.68e-01  
+SBP      HFpEF     267    +0.0197     0.0028   3.18e-12  *
+T2D      HFpEF      87    +0.0135     0.0223   5.45e-01  
+
+BMI      HFrEF     329    +0.5651     0.0454   1.44e-35  *
+CAD      HFrEF     118    +0.3786     0.0279   6.07e-42  *
+TG       HFrEF     249    +0.2156     0.0524   3.83e-05  *
+LDL      HFrEF     205    +0.1949     0.0479   4.71e-05  *
+TC       HFrEF     245    +0.1819     0.0415   1.15e-05  *
+HbA1c    HFrEF     171    +0.1266     0.0415   2.29e-03  *
+T2D      HFrEF      87    +0.0994     0.0232   1.81e-05  *
+SBP      HFrEF     267    +0.0224     0.0033   1.66e-11  *
+
+SPECIFICITY CONTRAST (the claim under review):
+  BMI  -> HFpEF  : b=+0.5852  P=3.04e-52  REACHES
+  T2D  -> HFpEF  : b=+0.0135  P=5.45e-01  not significant
+  CAD  -> HFpEF  : b=+0.1634  P=6.25e-13  REACHES
+  SBP  -> HFpEF  : b=+0.0197  P=3.18e-12  REACHES
+  BMI  -> HFrEF  : b=+0.5651  P=1.44e-35  REACHES
+  T2D  -> HFrEF  : b=+0.0994  P=1.81e-05  REACHES
+  CAD  -> HFrEF  : b=+0.3786  P=6.07e-42  REACHES
+  SBP  -> HFrEF  : b=+0.0224  P=1.66e-11  REACHES
+
+READ: with CAD included in the case definition, whether CAD and T2D reach the HF subtypes is
+now an empirical result rather than a definitional one. Compare each edge's direction and
+significance with the non-ischemic analysis (network_hfsubtypes.csv) and with all-cause HF
+(forward_local_edges.csv) to read adiposity's obesity-cardiomyopathy route honestly.

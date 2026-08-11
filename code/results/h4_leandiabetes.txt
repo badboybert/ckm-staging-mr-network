@@ -1,0 +1,65 @@
+=== H4: robust lean-diabetes suite (EAS T2D -> BMI) ===
+
+(1) EAS hospital-cohort meta of T2D->BMI (BBJ b=-0.098 se=0.019; TPMI b=-0.046 se=0.017):
+   FE : b=-0.0689  95% CI [-0.0935, -0.0443]  p=0.0000  (I2=76%)
+   DL : b=-0.0710  95% CI [-0.1220, -0.0200]  p=0.0064  (I2=76%)
+   HK : b=-0.0710  95% CI [-0.4019, +0.2599]  p=0.2238  (I2=76%)
+   -> Hartung-Knapp (the conservative RE inference for k=2) is the honest headline.
+
+(2) Population KoGES DM->BMI: 9 harmonised instruments
+   Inverse variance weighted    b=-0.0431 se=0.0514 p=0.4017
+   MR Egger                     b=-0.1609 se=0.1687 p=0.3720
+   Weighted median              b=-0.0901 se=0.0153 p=0.0000
+   Weighted mode                b=-0.1022 se=0.0223 p=0.0018
+   Penalised weighted median    b=-0.1135 se=0.0148 p=0.0000
+
+Radial IVW
+
+                    Estimate   Std.Error    t value     Pr(>|t|)
+Effect (Mod.2nd) -0.04312009 0.051369254 -0.8394145 4.012368e-01
+Iterative        -0.04312018 0.051369264 -0.8394160 4.012359e-01
+Exact (FE)       -0.06672270 0.009278859 -7.1908305 6.439838e-13
+Exact (RE)       -0.04355758 0.041132021 -1.0589701 3.205370e-01
+
+
+Residual standard error: 5.657 on 8 degrees of freedom
+
+F-statistic: 0.7 on 1 and 8 DF, p-value: 0.426
+Q-Statistic for heterogeneity: 256.0562 on 8 DF , p-value: 8.955324e-51
+
+ Outliers detected 
+Number of iterations = 3
+   radial-IVW: b=-0.0431  Q-outliers flagged=7
+
+   Leave-one-out (IVW, drop each SNP):
+     drop rs10811662   b=-0.0379 p=0.5226
+     drop rs11187138   b=-0.0364 p=0.5183
+     drop rs11558471   b=-0.0410 p=0.4725
+     drop rs11658063   b=-0.0370 p=0.5060
+     drop rs2074356    b=-0.0592 p=0.2279
+     drop rs2233580    b=-0.0527 p=0.3739
+     drop rs35612982   b=-0.0149 p=0.8049
+     drop rs60808706   b=-0.0344 p=0.5551
+     drop rs6567160    b=-0.0674 p=0.0519
+   full IVW = -0.0431; LOO range [-0.0674, -0.0149]
+   drop rs2074356 (12q24/ALDH2): IVW b=-0.0592 p=0.2279 (n=8)
+   drop rs6567160 (MC4R): IVW b=-0.0674 p=0.0519 (n=8)
+
+READ: report the Hartung-Knapp meta as the conservative EAS hospital estimate; the population
+KoGES estimate under weighted-mode/median + radial (pleiotropy-robust) and its sensitivity to
+12q24/MC4R govern whether the negative edge is a robust signature or an outlier-driven artifact.
+
+=== HONEST READ (H4) ===
+- The EAS hospital-cohort meta is SIGNIFICANT under fixed-effect (-0.069, p<0.001) but NON-SIGNIFICANT
+  under the conservative Hartung-Knapp RE inference (-0.071, 95% CI [-0.40,+0.26], p=0.22), because
+  k=2 and I2=0.76. Report the HK CI -> the meta is not robustly significant (confirms reviewer M6).
+- In the population KoGES cohort, IVW is null (-0.043, p=0.40) but ALL pleiotropy-robust estimators
+  are significantly negative (weighted median -0.090, weighted mode -0.102, penalised WM -0.114,
+  p<0.01). Extreme heterogeneity (Q=256 on 8 df, 7 radial outliers) reflects the biological split:
+  beta-cell/insulin-secretion loci lower BMI, the two adiposity loci (MC4R, 12q24) raise it. Dropping
+  those adiposity outliers moves IVW negative (-0.059 to -0.067), toward the robust estimators.
+- NET: the negative T2D->BMI edge is a robust-estimator signal carried by a mechanistically-coherent
+  beta-cell instrument cluster, but IVW is null and the HK meta is non-significant. This CONFIRMS and
+  hardens the paper's existing hedge (invariant #7): an underpowered, mechanistically-plausible
+  signature of the leaner EAS diabetes phenotype -- neither a demonstrable artifact nor a proven
+  causal effect. Report weighted-median/mode + HK; keep the edge explicitly exploratory.

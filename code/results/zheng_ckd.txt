@@ -1,0 +1,8 @@
+=== Zheng2021 replication: SBP->CKD and BMI->CKD ===
+
+EUR  SBP->CKD : nSNP=455  IVW b=+0.0143 se=0.0017 p=1.11e-17
+EUR  BMI->CKD : nSNP=521  IVW b=+0.1429 se=0.0286 p=5.60e-07
+EAS  SBP->CKD : nSNP= 21  IVW b=+0.0979 se=0.2240 p=6.62e-01
+EAS  BMI->CKD : nSNP= 63  IVW b=+0.4081 se=0.1440 p=4.60e-03
+
+NOTE: CKD is binary (log-OR). Zheng2021: HTN/SBP->CKD causal in EUR, NULL in EAS; BMI->CKD both (nonlinear threshold).

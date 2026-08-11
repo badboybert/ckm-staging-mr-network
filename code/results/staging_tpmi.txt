@@ -1,0 +1,24 @@
+=== Staging analysis on network_tpmi_full.csv ===
+Edges tested: 49  | Bonferroni edge threshold = 0.05/49 = 1.02e-03
+
+[FALSIFICATION SCAN] nominally-sig, Steiger-correct BACKWARD (high->low AHA stage) edges:
+    T2D->BMI (stage 2->1)  b=-0.046 p=7.10e-03  [sub-threshold(NS after correction)]
+    Stroke->TC (stage 4->2)  b=+0.033 p=2.95e-02  [sub-threshold(NS after correction)]
+Significant Steiger-correct causal edges: 10 over 10 nodes
+
+[1] Feedback modules (cyclic SCCs): none (graph is acyclic)
+[2] Genetic causal layering (nodes in same layer are causally concurrent/incomparable):
+      layer 0: ['BMI', 'HbA1c', 'LDL', 'SBP', 'TC']
+      layer 1: ['CAD', 'CKD', 'HF', 'Stroke', 'T2D']
+      SOURCE (upstream drivers, in-deg 0): ['BMI', 'HbA1c', 'LDL', 'SBP', 'TC']
+      SINK   (downstream endpoints, out-deg 0): ['CAD', 'CKD', 'HF', 'Stroke', 'T2D']
+
+[3] Cross-stage edges: 9  | forward(low->high AHA)=9  backward(high->low)=0
+    Stage-order CONCORDANCE = 1.000
+    Backward (AHA-discordant) edges: none
+[4] Edges the AHA staging order gets 'backward' (violations): none
+
+[5] Concordance vs label-permutation null (n=10000): empirical p = 0.1164
+    => NOT beyond chance
+
+NOTE: tests necessary POPULATION-LEVEL causal-ordering conditions, not within-person progression.

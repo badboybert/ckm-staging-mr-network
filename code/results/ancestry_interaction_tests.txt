@@ -1,0 +1,28 @@
+=== E6: formal EUR-vs-EAS ancestry-interaction tests ===
+Test: z=(b_EUR - b_EAS)/sqrt(se_EUR^2+se_EAS^2), two-sided P. EAS = Biobank Japan (BBJ).
+
+edge           EUR b(se)          EAS b(se)               z     P_int  note
+SBP->CKD       +0.276(0.033)      +0.098(0.224)        0.79    0.4315  SBP per-mmHg(EUR) vs per-SD(EAS) -> EUR converted x19.3
+BMI->CKD       +0.143(0.029)      +0.408(0.144)       -1.81    0.0709  both per-SD
+BMI->HbA1c     +0.225(0.020)      -0.234(0.105)        4.29    0.0000  HbA1c scale non-comparable (Methods)
+HbA1c->HF      +0.048(0.020)      -0.180(0.056)        3.82    0.0001  HbA1c scale non-comparable (Methods)
+TG->LDL        +0.277(0.025)      -0.115(0.051)        6.86    0.0000  both per-SD lipids
+HbA1c->TG      +0.069(0.019)      -0.091(0.033)        4.21    0.0000  HbA1c scale non-comparable (Methods)
+T2D->HDL       -0.071(0.017)      +0.034(0.013)       -4.97    0.0000  T2D log-OR exposure; HDL per-SD
+
+Multiple testing: 7 interaction tests; Bonferroni threshold 0.05/7 = 0.0071
+Significant at nominal 0.05: ['BMI->HbA1c', 'HbA1c->HF', 'TG->LDL', 'HbA1c->TG', 'T2D->HDL']
+Significant after Bonferroni: ['BMI->HbA1c', 'HbA1c->HF', 'TG->LDL', 'HbA1c->TG', 'T2D->HDL']
+
+READ (honest):
+- SBP->CKD: on a COMMON per-SD scale the EUR and EAS estimates do NOT differ significantly
+  (the EAS estimate is imprecise, CI compatible with EUR). 'EUR-significant, EAS-null' is a POWER
+  difference, NOT a demonstrated ancestry interaction -> reframe from 'replicated divergence' to
+  'EUR-supported, EAS underpowered/imprecise' (reviewer M5).
+- SELECTION: these 5 are the BOTH-ANCESTRY-SIGNIFICANT opposite-sign subset. Across all 101 overlapping
+  edges there are ~12 Bonferroni-significant sign reversals; the other ~7 have >=1 ancestry non-significant
+  (a power/imprecise-null artifact, not a demonstrated interaction). So the 5 are a principled selection,
+  NOT the only or the strongest reversals - state this criterion so they are not read as the full set.
+- The 3 HbA1c edges are additionally scale-non-comparable -> sign-level interactions only (reviewer M7,C6).
+  TG->LDL and T2D->HDL are comparable-scale (magnitude + sign). Sign flips are scale-invariant under
+  positive rescaling, so the sign-level reading is defensible even for the HbA1c edges.

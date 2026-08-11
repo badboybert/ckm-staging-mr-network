@@ -1,0 +1,29 @@
+=== Staging analysis on forward_local_edges.csv ===
+Edges tested: 111  | Bonferroni edge threshold = 0.05/111 = 4.50e-04
+
+[FALSIFICATION SCAN] nominally-sig, Steiger-correct BACKWARD (high->low AHA stage) edges:
+    CAD->T2D (stage 4->2)  b=+0.168 p=1.56e-06  [SURVIVES-Bonferroni]
+    HF->T2D (stage 4->2)  b=+0.422 p=3.93e-04  [SURVIVES-Bonferroni]
+    eGFR->BMI (stage 2->1)  b=-0.518 p=7.35e-04  [sub-threshold(NS after correction)]
+    CAD->HDL (stage 4->2)  b=-0.105 p=2.66e-03  [sub-threshold(NS after correction)]
+    HDL->BMI (stage 2->1)  b=-0.068 p=3.31e-02  [sub-threshold(NS after correction)]
+Significant Steiger-correct causal edges: 50 over 12 nodes
+
+[1] Feedback modules (cyclic SCCs): [{'CAD', 'TG', 'HF', 'T2D', 'HDL', 'LDL', 'TC'}]
+[2] Genetic causal layering (nodes in same layer are causally concurrent/incomparable):
+      layer 0: ['BMI', 'SBP']
+      layer 1: ['HbA1c']
+      layer 2: ['CAD', 'HDL', 'HF', 'LDL', 'T2D', 'TC', 'TG']
+      layer 3: ['Stroke', 'eGFR']
+      SOURCE (upstream drivers, in-deg 0): ['BMI', 'SBP']
+      SINK   (downstream endpoints, out-deg 0): ['Stroke', 'eGFR']
+
+[3] Cross-stage edges: 27  | forward(low->high AHA)=25  backward(high->low)=2
+    Stage-order CONCORDANCE = 0.926
+    Backward (AHA-discordant) edges: [('CAD', 'T2D'), ('HF', 'T2D')]
+[4] Edges the AHA staging order gets 'backward' (violations): [('CAD', 'T2D'), ('HF', 'T2D')]
+
+[5] Concordance vs label-permutation null (n=10000): empirical p = 0.0018
+    => concordant with AHA order beyond chance
+
+NOTE: tests necessary POPULATION-LEVEL causal-ordering conditions, not within-person progression.

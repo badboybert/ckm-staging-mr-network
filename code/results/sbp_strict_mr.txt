@@ -1,0 +1,32 @@
+=== X->SBP re-estimated on strict allele-matched instruments ===
+
+Strict set = step-62 'match' + 'strand_flip' only; every strand-ambiguous (palindromic)
+variant dropped outright. Step 62 found 0 allele mismatches, 0 non-SNV matches, 0 position
+collisions and 0 multiallelic SBP records among 3,156 matched variants, so this is a
+conservative sensitivity analysis. Network Bonferroni = 0.05/132 = 3.79e-04
+
+edge           nSNP          b          P |   nSNP          b          P | verdict
+BMI->SBP        505    -0.5779   1.84e-02 |    452    -0.5237   4.11e-02 | sign + Bonferroni status unchanged
+TG->SBP         416    +1.7514   2.90e-10 |    370    +1.7418   2.12e-09 | sign + Bonferroni status unchanged
+HDL->SBP        439    -0.9169   1.10e-04 |    379    -0.8558   9.38e-04 | CHANGED
+TC->SBP         397    +0.2298   3.06e-01 |    347    +0.2260   3.53e-01 | sign + Bonferroni status unchanged
+LDL->SBP        336    +0.3007   2.11e-01 |    296    +0.3018   2.39e-01 | sign + Bonferroni status unchanged
+HbA1c->SBP      281    +0.7981   4.55e-04 |    281    +0.7981   4.55e-04 | sign + Bonferroni status unchanged
+CAD->SBP        167    +1.8194   6.74e-10 |    141    +1.4812   1.11e-07 | sign + Bonferroni status unchanged
+HF->SBP          44    +1.5595   1.88e-02 |     38    +1.9409   5.95e-03 | sign + Bonferroni status unchanged
+T2D->SBP        116    +0.7552   2.30e-08 |    110    +0.7352   8.51e-08 | sign + Bonferroni status unchanged
+eGFR->SBP       320    +0.5430   8.10e-01 |    266    +2.2248   3.68e-01 | sign + Bonferroni status unchanged
+Stroke->SBP      23    +1.9175   5.39e-02 |     22    +1.7722   8.46e-02 | sign + Bonferroni status unchanged
+
+10/11 edges keep both their sign and their Bonferroni status under strict matching.
+Of these, 4 are INFORMATIVE (instrument set actually changed AND significant under at
+least one of base/strict): TG->SBP, HDL->SBP, CAD->SBP, T2D->SBP.
+1 edge(s) unchanged BY CONSTRUCTION (no eaf, no palindrome left to drop): HbA1c->SBP.
+Precise claim: among informative edges none crosses the network Bonferroni threshold under
+strict matching except HDL->SBP. Point estimates DO move (see table).
+
+CAD->SBP (the load-bearing backward edge):
+  shipped   b=+1.8194  P=6.739e-10
+  re-run    b=+1.8194  P=6.739e-10  (167 SNPs)
+  strict    b=+1.4812  P=1.112e-07  (141 SNPs, 26 palindromic dropped)
+  -> backward edge SURVIVES under strict allele matching.

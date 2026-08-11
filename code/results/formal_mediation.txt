@@ -1,0 +1,37 @@
+=== E7/H2: formal network-MR mediation of the exposure->CAD->HF pathway ===
+a = exposure->CAD (univariable); b = CAD->HF|exposure (MVMR direct); total/direct = exposure->HF.
+
+Shared mediator path b = CAD->HF direct (HF_via_CAD MVMR) = +0.278 (se 0.022), cond_F=12.2
+
+--- T2D -> HF ---
+  total   (univariable)        = +0.052 (se 0.013)
+  direct  (| CAD, MVMR)        = +0.011 (se 0.013, p=0.406)
+  a = T2D->CAD               = +0.129 (se 0.022)
+  indirect (product a*b)       = +0.036  95% CI [+0.023, +0.050]
+  indirect (difference)        = +0.041  95% CI [+0.004, +0.078]
+  proportion mediated (product)= 68%  95% CI [37%, 142%]
+  proportion mediated (diff)   = 79%  95% CI [13%, 132%]
+
+--- BMI -> HF ---
+  total   (univariable)        = +0.525 (se 0.020)
+  direct  (| CAD, MVMR)        = +0.415 (se 0.031, p=1.29e-31)
+  a = BMI->CAD               = +0.387 (se 0.028)
+  indirect (product a*b)       = +0.107  95% CI [+0.086, +0.131]
+  indirect (difference)        = +0.110  95% CI [+0.037, +0.182]
+  proportion mediated (product)= 20%  95% CI [16%, 25%]
+  proportion mediated (diff)   = 21%  95% CI [7%, 34%]
+
+READ (calibrated, replaces the null-coefficient argument):
+- T2D->HF: the robust claim is a SIGNIFICANT INDIRECT effect via CAD + an UNDETECTABLE direct effect
+  (p=0.41). The point proportion mediated is ~68-79% but the CI is WIDE (~13-142%; the total T2D->HF
+  effect is small), so do NOT sell a fixed fraction. State 'T2D reaches heart failure PREDOMINANTLY
+  through CAD - the indirect path is significant and no CAD-independent direct effect is detectable
+  (proportion mediated ~68-79%, 95% CI wide)', NOT the exclusive 'only via CAD' (C7).
+- BMI->HF is PREDOMINANTLY DIRECT: only ~20% passes through CAD, ~80% is a direct effect
+  independent of CAD/T2D -> supports adiposity reaching HF directly (obesity-cardiomyopathy),
+  concordant with the HF-subtype result (adiposity drives non-ischemic HF; CAD does not).
+
+Robustness (mvmr_robust.csv): CAD->HF direct is stable across IVW/MR-Egger/Q-min (0.278/0.276/0.298),
+Egger intercept p=0.35 (no directional pleiotropy); BMI->HF direct 0.415/0.450/0.414; T2D->HF direct
+~0.011 across all three. Conditional F: min 12.2 (the CAD mediator) — adequate but NEAR the weak-
+instrument threshold, so the CAD->HF conditional estimate carries a mild weak-IV caveat; disclose.

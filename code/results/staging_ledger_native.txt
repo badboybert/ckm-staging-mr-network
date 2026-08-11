@@ -1,0 +1,49 @@
+=== NATIVE-SCALE falsifiable staging ledger (reviewer C4/E3) ===
+Transitions adjudicated: 15
+
+Each reverse edge Y->X is judged on ITS OWN native scale: the reverse 95% CI is compared
+with a negligibility bound for that outcome's units (binary log-odds: log(1.05)=0.0488;
+SBP: 1 mmHg; other continuous: 0.05 SD). This replaces the cross-unit power gate
+(MDE_rev vs |b_fwd|) and the single fixed TOST bound, both of which compared quantities
+measured on different scales. Legacy power/TOST values are retained as secondary columns.
+
+VERDICTS: CONCORDANT=7, DISCORDANT=2, DISCORDANT_CAVEATED=2, INDETERMINATE=4
+LABELS  : reverse-excluded=2, reverse-inconclusive=4, reverse-pleiotropy-caveated=2, reverse-supported=2, reverse-wrong-direction=5
+
+transition        b_fwdreverse           b_rev                95% CI   bound  label                 verdict
+-----------------------------------------------------------------------------------------------------------
+BMI->T2D        +0.9903T2D->BMI        +0.0097      [-0.025, +0.044]  0.0500  reverse-excluded      CONCORDANT
+BMI->CAD        +0.3870CAD->BMI        -0.0045      [-0.039, +0.030]  0.0500  reverse-excluded      CONCORDANT
+BMI->HF         +0.5246HF->BMI         +0.2292      [-0.084, +0.543]  0.0500  reverse-inconclusive  INDETERMINATE
+BMI->Stroke     +0.1513Stroke->BMI     +0.0153      [-0.020, +0.050]  0.0500  reverse-inconclusive  INDETERMINATE
+SBP->CAD        +0.0336CAD->SBP        +1.4812      [+0.934, +2.028]  1.0000  reverse-pleiotropy-caveatedDISCORDANT_CAVEATED
+SBP->HF         +0.0199HF->SBP         +1.9409      [+0.558, +3.324]  1.0000  reverse-wrong-directionCONCORDANT
+SBP->Stroke     +0.0269Stroke->SBP     +1.7722      [-0.242, +3.787]  1.0000  reverse-inconclusive  INDETERMINATE
+LDL->CAD        +0.5109CAD->LDL        +0.2462      [+0.148, +0.344]  0.0500  reverse-wrong-directionCONCORDANT
+LDL->HF         +0.1215HF->LDL         +0.2790      [+0.007, +0.551]  0.0500  reverse-wrong-directionCONCORDANT
+HbA1c->T2D      +1.0610T2D->HbA1c      +0.2793      [+0.250, +0.308]  0.0500  reverse-wrong-directionCONCORDANT
+HbA1c->CAD      +0.1838CAD->HbA1c      +0.0312      [+0.003, +0.060]  0.0500  reverse-inconclusive  INDETERMINATE
+T2D->CAD        +0.1290CAD->T2D        +0.1675      [+0.099, +0.236]  0.0488  reverse-pleiotropy-caveatedDISCORDANT_CAVEATED
+T2D->HF         +0.0525HF->T2D         +0.4217      [+0.189, +0.655]  0.0488  reverse-supported     DISCORDANT
+T2D->Stroke     +0.0805Stroke->T2D     +0.2324      [+0.081, +0.384]  0.0488  reverse-supported     DISCORDANT
+CAD->HF         +0.2851HF->CAD         +0.8069      [+0.514, +1.100]  0.0488  reverse-wrong-directionCONCORDANT
+
+READ: 7 concordant, 2 discordant (genuine reverse effect), 2 discordant-with-pleiotropy-caveat, 4 indeterminate.
+DISCORDANT = the reverse edge is significant on its native scale, exceeds the negligibility
+bound, is Steiger-correct and carries no directional pleiotropy. Both such edges here point
+INTO diabetes (HF->T2D, Stroke->T2D): they are reciprocal feedback into a stage-2 trait, not
+reverse stage progression, and the Stroke->T2D arm rests on only 18 reverse instruments.
+DISCORDANT_CAVEATED = Steiger-correct and significant, but the Egger intercept is non-zero, so
+the reverse effect is real while its magnitude is pleiotropy-inflated (CAD->SBP index-event;
+CAD->T2D feedback-with-caveat, matching the independent H5 pleiotropy-robust suite).
+
+KNIFE-EDGE VERDICTS (a CI endpoint within 10% of the negligibility bound; these would flip
+under trivial re-rounding and are reported as such, not resolved):
+  BMI->Stroke  reverse Stroke->BMI: CI [-0.0198, +0.0505] vs bound 0.0500 -> INDETERMINATE
+
+COMPARISON WITH THE LEGACY POWER-GATE LEDGER (11_ledger.py, results/staging_ledger.csv):
+the legacy rule returned 11 concordant / 2 discordant / 2 discordant-pleiotropic. The native-
+scale rule is more conservative where the reverse arm is thin -- BMI->HF, BMI->Stroke and
+SBP->Stroke move to INDETERMINATE because their reverse CIs span both zero and the
+negligibility bound -- and it separates pleiotropy-caveated reverse effects from
+Steiger-wrong-direction ones, which the legacy rule pooled.

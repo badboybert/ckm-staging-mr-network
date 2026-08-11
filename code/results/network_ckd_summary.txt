@@ -1,0 +1,20 @@
+=== BINARY CKD NODE (Wuttke 2019 CKDGen, GCST008065, EUR) — 2nd tranche, 2026-07-19 ===
+Reviewer C2: a binary kidney-DAMAGE node distinct from the quantitative eGFR node. CKD is a
+stage-2 CKM component. 24 clumped instruments. 13 edges in results/network_ckd.csv.
+
+RF -> CKD (kidney damage). Report in THREE robustness tiers (do NOT present all as equally solid):
+  ROBUST (IVW-sig + weighted-median-sig + clean Egger intercept):
+    BMI->CKD +0.14 (ivw 3e-5, WM p=0.027, intercept p=0.71); SBP->CKD +0.015 (ivw 9e-7, WM p<1e-3,
+    intercept p=0.74, the classic hypertension->kidney edge); HF->CKD +0.14 (ivw 0.028, WM p=0.007,
+    intercept p=0.63, cardio-renal).
+  IVW-ONLY / PLEIOTROPY-SUSPECT (WM null + SIGNIFICANT Egger intercept -> do not over-read):
+    HDL->CKD -0.10 (ivw 1e-3, WM p=0.43, intercept p=0.008); TG->CKD +0.099 (ivw 5e-3, WM p=0.87,
+    intercept p=0.027).
+  IVW-LED, LOWER-POWER (WM null, clean intercept): TC->CKD -0.074 (ivw 0.017, WM p=0.19).
+  NON-SIGNIFICANT: T2D->CKD, LDL->CKD, HbA1c->CKD.
+
+CKD -> CVD (CKD as exposure): ALL NULL — CKD->CAD +0.026 (p=0.52), CKD->HF +0.004 (0.83),
+CKD->Stroke +0.024 (0.33). Genetically-predicted CKD shows no detectable causal effect on CVD here.
+CAVEAT (disclose): 22-24 CKD instruments -> UNDERPOWERED as an exposure; the null CKD->CVD is an
+absence-of-evidence (contrast with the strong observational CKD->CVD association), not evidence of
+absence. The node mainly adds RF->kidney-damage edges; it does not materially change the staging test.

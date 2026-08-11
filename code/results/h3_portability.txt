@@ -1,0 +1,33 @@
+=== H3: network-aware cross-ancestry portability (EUR vs EAS-BBJ), dependence-robust ===
+Common estimable edges (both ancestries): 101
+
+[all common edges] n=101
+   sign concordance = 0.614 (62/101)
+   effect correlation (comparable-scale, n=56) = 0.681
+[EUR-Bonferroni-significant subset] n=52
+   sign concordance = 0.692 (36/52)
+   effect correlation (comparable-scale, n=37) = 0.657
+
+EUR-significant subset (52 edges), dependence-robust 95% CIs:
+   sign concordance : edge-block [0.558, 0.808]  node-block [0.444, 1.000]
+   effect correlation: edge-block [0.310, 0.879]  node-block [-0.319, 0.960]
+   sign-flip permutation P (observed 0.692 vs random-sign) = 0.0044
+
+READ: report portability on the COMMON ESTIMABLE SUBGRAPH with dependence-robust CIs (edge- and
+node-block bootstrap), NOT the binomial that assumes edge independence. Sign concordance is the
+robust portability signal (scale-invariant); the magnitude correlation is reported only on
+comparable-scale edges. State 'suggestive topological/directional concordance' with these CIs, not
+'the topology ports/replicates' (reviewer M4).
+=== HONEST READ (H3) ===
+- On the common estimable subgraph (101 edges; 52 EUR-Bonferroni-significant), sign concordance is
+  0.69 for the EUR-significant edges, exceeds a sign-flip null (P=0.004), and the edge-block bootstrap
+  CI [0.56,0.81] excludes 0.5. The comparable-scale effect correlation (SBP excluded as per-mmHg vs
+  per-SD) is ~0.66-0.68 (edge-block CI [0.31,0.88]).
+- BUT the NODE-block bootstrap (respecting that edges sharing a node are dependent) gives a WIDE sign-
+  concordance CI [0.44,1.00] (includes chance) and correlation CI [-0.32,0.96]. So the binomial/tau
+  overstated the certainty: portability is a real but MODEST and UNCERTAIN directional signal.
+- The sign-flip permutation P=0.004 is essentially the one-sided binomial and does NOT address edge
+  dependence; only the node-block bootstrap does. Cite the node-block CI as the dependence-robust check.
+- REPORT as "suggestive directional concordance" with the dependence-robust CIs, NOT "topology ports/
+  replicates" (reviewer M4). Sign concordance (scale-invariant) is the robust statistic; magnitude
+  correlation is on comparable-scale edges only.

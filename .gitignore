@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.Rhistory
+.RData
+.Rproj.user/
+.DS_Store
+Thumbs.db
+*.log
+# raw third-party summary statistics are NEVER tracked here
+data/
+*.tsv.gz
+*.vcf.gz
+*.tmp

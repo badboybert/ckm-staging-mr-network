@@ -1,0 +1,53 @@
+# ITEM 2 — BBJ+TPMI EAS META staging (2026-07-14)
+# Powered like-for-like EAS staging null on the 34-edge 2-cohort meta network.
+
+===== FIXED-EFFECT META =====
+=== Staging analysis on network_eas_meta_fixed.csv ===
+Edges tested: 34  | Bonferroni edge threshold = 0.05/34 = 1.47e-03
+
+[FALSIFICATION SCAN] nominally-sig, Steiger-correct BACKWARD (high->low AHA stage) edges:
+    T2D->BMI (stage 2->1)  b=-0.069 p=4.50e-08  [SURVIVES-Bonferroni]
+Significant Steiger-correct causal edges: 12 over 11 nodes
+
+[1] Feedback modules (cyclic SCCs): [{'T2D', 'BMI'}]
+[2] Genetic causal layering (nodes in same layer are causally concurrent/incomparable):
+      layer 0: ['HDL', 'HbA1c', 'LDL', 'SBP', 'TC', 'TG']
+      layer 1: ['BMI', 'Stroke', 'T2D']
+      layer 2: ['CAD', 'HF']
+      SOURCE (upstream drivers, in-deg 0): ['HDL', 'HbA1c', 'LDL', 'SBP', 'TC', 'TG']
+      SINK   (downstream endpoints, out-deg 0): ['CAD', 'HF', 'Stroke']
+
+[3] Cross-stage edges: 11  | forward(low->high AHA)=10  backward(high->low)=1
+    Stage-order CONCORDANCE = 0.909
+    Backward (AHA-discordant) edges: [('T2D', 'BMI')]
+[4] Edges the AHA staging order gets 'backward' (violations): [('T2D', 'BMI')]
+
+[5] Concordance vs label-permutation null (n=10000): empirical p = 0.0592
+    => NOT beyond chance
+
+NOTE: tests necessary POPULATION-LEVEL causal-ordering conditions, not within-person progression.
+
+===== RANDOM-EFFECT META =====
+=== Staging analysis on network_eas_meta_random.csv ===
+Edges tested: 34  | Bonferroni edge threshold = 0.05/34 = 1.47e-03
+
+[FALSIFICATION SCAN] nominally-sig, Steiger-correct BACKWARD (high->low AHA stage) edges:
+    T2D->BMI (stage 2->1)  b=-0.071 p=6.48e-03  [sub-threshold(NS after correction)]
+Significant Steiger-correct causal edges: 8 over 10 nodes
+
+[1] Feedback modules (cyclic SCCs): none (graph is acyclic)
+[2] Genetic causal layering (nodes in same layer are causally concurrent/incomparable):
+      layer 0: ['BMI', 'HDL', 'HbA1c', 'LDL', 'SBP', 'TC']
+      layer 1: ['CAD', 'HF', 'Stroke', 'T2D']
+      SOURCE (upstream drivers, in-deg 0): ['BMI', 'HDL', 'HbA1c', 'LDL', 'SBP', 'TC']
+      SINK   (downstream endpoints, out-deg 0): ['CAD', 'HF', 'Stroke', 'T2D']
+
+[3] Cross-stage edges: 7  | forward(low->high AHA)=7  backward(high->low)=0
+    Stage-order CONCORDANCE = 1.000
+    Backward (AHA-discordant) edges: none
+[4] Edges the AHA staging order gets 'backward' (violations): none
+
+[5] Concordance vs label-permutation null (n=10000): empirical p = 0.1314
+    => NOT beyond chance
+
+NOTE: tests necessary POPULATION-LEVEL causal-ordering conditions, not within-person progression.

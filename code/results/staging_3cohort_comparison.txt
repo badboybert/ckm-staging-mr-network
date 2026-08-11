@@ -1,0 +1,40 @@
+=== AHA-2023 CKM staging causal-ordering test: EUR vs BBJ(Japan) vs TPMI(Taiwan) ===
+(07_staging.py; Bonferroni-sig + Steiger-correct edges -> DAG -> cross-stage concordance + label-permutation null.
+STAGE: BMI=1; SBP/lipids/HbA1c/T2D/eGFR/CKD=2; CAD/HF/Stroke=4. Concordance = fraction of cross-stage edges low->high.
+Tests NECESSARY population-level ordering conditions, not within-person progression.)
+★★ ADVERSARIALLY VERIFIED (agent af81046) = PARTIALLY_REFUTED: numbers reproduce EXACT, but the "clean 1.000
+portability" headline was OVERSTATED. Corrected framing below.
+
+cohort        concordance   cross-stage(fwd/back)   backward (AHA-discordant)          perm_p       reads as
+EUR             0.926          27 (25 / 2)          CAD->T2D, HF->T2D (pleiotropy)      0.0018 SIG   CONFIRMED beyond chance
+BBJ (Japan)     0.727          11 (8 / 3)           HbA1c/T2D/TC->BMI  [ALL ->BMI]      0.108  ns    degraded by ->BMI
+TPMI (Taiwan)   1.000           9 (9 / 0)           none (at Bonferroni)               0.116  ns    NON-falsified only
+
+★ HONEST HEADLINE (corrected): Only EUR establishes staging concordance BEYOND CHANCE (perm p=0.0018). The two EAS
+  cohorts are NON-significant (perm p ~0.11) — a POWER limitation (single EAS cohorts yield far fewer Bonferroni-sig
+  edges than EUR's 27), so they can NON-FALSIFY but not positively confirm the AHA order. **State as "the AHA staging
+  order is not falsified in a 2nd EAS cohort," NOT "confirmed portable EUR->EAS."**
+
+★ WHY TPMI's 1.000 is NOT the clean win it first looked (verifier):
+  1. NOT LIKE-FOR-LIKE: TPMI's reverse arm is thin — it tests only T2D->BMI and Stroke->BMI (T2D/Stroke are the only
+     diseases with >=3 EAS instruments). It NEVER tests HbA1c->BMI or TC->BMI (2 of BBJ's 3 violations) nor CAD/HF as
+     exposures (EUR's 2 violations). So "1.000 >= EUR 0.926" compares different edge sets.
+  2. KNIFE-EDGE SE, not removal: the ->BMI signal is PRESENT in TPMI. T2D->BMI = -0.046 (nominal p=7.1e-3, SAME negative
+     direction as BBJ -0.098; sign verified genuine, 41/57 SNPs negative, 0 allele flips). It falls sub-Bonferroni ONLY
+     because of huge heterogeneity (Q=328/df55) inflating the default multiplicative-random-effects SE 2.44x. **Under
+     FIXED-effect IVW, T2D->BMI is p~5e-11, survives Bonferroni, and TPMI concordance DROPS to 0.900 with a ->BMI
+     backward violation identical in kind to BBJ.** The "clean 1.000" is not robust to a standard analytic choice.
+  3. NEAR-TRIVIAL: the TPMI sig-graph is perfectly bipartite (5 RF-sources -> 5 disease-sinks) so all cross-stage edges
+     are forward almost by construction; the perm null confirms 11.6% of random stage-labelings also hit 1.000.
+
+★ WHAT ACTUALLY HOLDS (solid): (a) forward network replicates EUR->EAS across 2 cohorts (RESULTS_LOG §6.11); BMI->T2D
+  resolved (BBJ artifact). (b) BBJ's staging degradation IS ->BMI-driven (3/3 backward are ->BMI, verified). (c) The
+  ->BMI negative signal REPLICATES across BOTH hospital EAS cohorts (BBJ + TPMI) -> consistent with disease-ascertainment
+  SELECTION, but a real EAS lean-diabetes-biology alternative is NOT excluded. EUR's null on all ->BMI edges (T2D->BMI
+  +0.010 p0.58, HbA1c->BMI +0.004 p0.90, TC->BMI -0.023 p0.35) is cross-ANCESTRY, so it cannot separate selection from
+  biology. **=> the POPULATION-vs-HOSPITAL test (TWB-Waist / KoGES-BMI population vs BBJ/TPMI hospital) is the decisive
+  next step (item 3), not this staging comparison.**
+
+NEXT to strengthen staging properly: BBJ+TPMI META-analysis (item 2) -> more sig edges -> a POWERED permutation null +
+a like-for-like reverse arm; report TPMI staging under BOTH fixed- and random-effect IVW (sensitivity to the T2D->BMI
+knife-edge). Source: staging_tpmi.txt, staging_eas.txt, staging_bidirectional.txt; network_tpmi_full.csv (T2D->BMI).

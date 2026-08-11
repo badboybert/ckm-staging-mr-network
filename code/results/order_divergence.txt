@@ -1,0 +1,21 @@
+=== Component D: cross-ancestry ORDER-divergence (graph-level, scale-free) ===
+shared nodes: ['BMI', 'SBP', 'LDL', 'HDL', 'TC', 'TG', 'HbA1c', 'T2D', 'eGFR', 'CAD', 'HF', 'Stroke']
+
+[1] NODE-ORDER Kendall-tau_a on raw netflow scores (ties excluded; higher score=upstream):
+  main            tau_a=+0.492  divergence(1-tau)=0.508  perm_p=0.0455  (concordant_pairs=44, discordant=15)
+     EUR netflow: BMI:+6, SBP:+5, HbA1c:+5, LDL:+3, HDL:+2, TC:+1, TG:+1, eGFR:-1, T2D:-2, CAD:-4, HF:-7, Stroke:-9
+     EAS netflow: SBP:+6, HbA1c:+3, T2D:+3, LDL:+1, TG:+1, HDL:+0, BMI:-1, eGFR:-1, TC:-2, Stroke:-2, CAD:-4, HF:-4
+  drop_->BMI      tau_a=+0.679  divergence(1-tau)=0.321  perm_p=0.0055  (concordant_pairs=47, discordant=9)
+  drop_SBP(sens)  tau_a=+0.464  divergence(1-tau)=0.536  perm_p=0.0731  (concordant_pairs=41, discordant=15)
+  drop_both(sens) tau_a=+0.633  divergence(1-tau)=0.367  perm_p=0.0071  (concordant_pairs=49, discordant=11)
+     PRIMARY = 'main' (no drops); 'drop_->BMI' = pre-specified BBJ-selection artifact sensitivity; 'drop_SBP' shown only for transparency (incoherent with scale-free score).
+
+[2] EDGE SIGN-concordance on well-powered shared edges (EUR-sig anchor, both nSNP>=10):
+  main         sign-concordant 44/65 = 0.677  binom_p=0.005918  (both-sig&concordant=26)
+  drop_->BMI   sign-concordant 43/63 = 0.683  binom_p=0.005152  (both-sig&concordant=25)
+  drop_SBP     sign-concordant 40/60 = 0.667  binom_p=0.01349  (both-sig&concordant=22)
+  drop_both    sign-concordant 39/58 = 0.672  binom_p=0.01193  (both-sig&concordant=21)
+
+[3] Sign-DISCORDANT well-powered edges, split by EAS significance:
+    GENUINE divergences (BOTH ancestries significant, opposite sign): ['BMI->HbA1c(EUR+0.23/EAS-0.23)', 'HbA1c->HF(EUR+0.05/EAS-0.18)', 'TG->LDL(EUR+0.28/EAS-0.11)', 'HbA1c->TG(EUR+0.07/EAS-0.09)', 'T2D->HDL(EUR-0.07/EAS+0.03)']
+    DARK (EAS NS/underpowered — sign flip is noise, not divergence): ['CAD->Stroke', 'BMI->T2D', 'T2D->TG', 'HbA1c->Stroke', 'SBP->T2D', 'LDL->Stroke', 'LDL->TG', 'TC->HbA1c', 'T2D->Stroke', 'HDL->BMI', 'T2D->HF', 'TC->HF', 'LDL->HF', 'HDL->Stroke', 'TG->HbA1c', 'TG->T2D']

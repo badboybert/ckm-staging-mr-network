@@ -1,0 +1,7 @@
+metric,value
+observed_concordance,0.9259259259259259
+perm_p,0.0015151515151515152
+n_cross,27
+n_forward,25
+n_backward,2
+null_mean,0.499

@@ -1,0 +1,24 @@
+=== HF-SUBTYPE ANALYSIS (Henry 2024 HERMES non-ischemic HF subtypes, EUR) — 2026-07-19 ===
+Path B: embed non-ischemic HFpEF/HFrEF as stage-4 outcome nodes to test the paper's obesity-
+cardiomyopathy route at the subtype level. Distinctive vs a me-too obesity->HFpEF MR because it
+is read INSIDE the cascade/common-driver framework. Outcomes: niHF (all-EF, 42,081 cases),
+niHFpEF (3,590), niHFrEF (4,975). Exposures are the well-powered RF instrument sets (100s of SNPs).
+
+THREE coherent findings:
+1. ADIPOSITY DRIVES BOTH NON-ISCHEMIC SUBTYPES, numerically larger on HFpEF: BMI->niHFpEF +0.77
+   (95% CI 0.60-0.94, p=1.8e-19), BMI->niHFrEF +0.54 (0.38-0.69, 1.1e-11), BMI->niHF(all-EF) +0.55
+   (1.1e-82). The HFpEF-vs-HFrEF difference is NOMINAL only (Δ=+0.24, z=2.0, p=0.044, CIs OVERLAP) ->
+   report as "consistent with a larger adiposity effect on HFpEF" (the clinical obesity-HFpEF link),
+   NOT as an established HFpEF>HFrEF contrast. The robust claim is that adiposity drives both directly.
+2. CAD does NOT drive NON-ISCHEMIC HF: CAD->niHFpEF +0.037 (p=0.48), CAD->niHFrEF +0.013 (0.78),
+   CAD->niHF +0.048 (0.01, weak) — vs CAD->all-cause-HF +0.285 in the main network. A clean
+   specificity control: it confirms the non-ischemic phenotype AND shows adiposity reaches HF
+   DIRECTLY (non-ischemic), not via coronary disease.
+3. T2D does NOT directly drive non-ischemic HF: T2D->niHFpEF -0.033 (0.41), niHFrEF +0.030 (0.46)
+   — consistent with the paper headline that T2D reaches HF via CAD (ischemic), not directly.
+   SBP drives both subtypes (niHFrEF +0.030 p=3e-9 > niHFpEF); HbA1c->niHFpEF -0.16 (0.017) nominal/odd.
+
+CAVEATS (disclose): the EF split is defined only WITHIN the non-ischemic stratum (tests obesity->
+non-ischemic CM, not all-comer HFpEF/HFrEF). Subtype case counts are small, but instruments are on
+the well-powered exposure side (RF->subtype), so exposure-side power is fine; the low-power concern
+applies to subtype-AS-exposure (reverse), not run here. Results in results/network_hfsubtypes.csv.

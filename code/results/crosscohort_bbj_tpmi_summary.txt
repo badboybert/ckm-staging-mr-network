@@ -1,0 +1,24 @@
+=== CROSS-COHORT EAS MR: BBJ exposure -> TPMI outcome (zero population overlap) — 2026-07-19 ===
+Addresses peer-review C5: the within-cohort EAS networks (BBJ->BBJ, TPMI->TPMI) are overlapping-
+sample MR. BBJ (Japanese) instruments against TPMI (Taiwanese) outcomes share no participants =
+a clean two-sample design. 45 edges (9 BBJ exposures x 5 TPMI outcomes); liftover hg19->hg38.
+
+edge         BBJ->BBJ               TPMI->TPMI             BBJ->TPMI (0-overlap) 
+BMI->CAD     +0.162 (p=1.1e-01)     +0.407 (p=2.3e-06)*    +0.178 (p=7.2e-03)*   
+BMI->HF      +0.451 (p=8.2e-10)*    +0.588 (p=3.5e-07)*    +0.487 (p=1.2e-06)*   
+BMI->T2D     -0.153 (p=5.8e-01)     +0.992 (p=6.3e-56)*    -0.114 (p=5.6e-01)    
+SBP->CAD     +0.527 (p=2.0e-02)*    +0.683 (p=4.6e-08)*    +0.152 (p=2.1e-01)    
+SBP->HF      +0.857 (p=1.0e-10)*    +0.458 (p=1.0e-03)*    +0.162 (p=1.9e-01)    
+SBP->Stroke  +0.973 (p=9.5e-09)*    +1.014 (p=2.6e-12)*    +0.673 (p=2.4e-07)*   
+LDL->CAD     +0.527 (p=5.4e-10)*    +0.390 (p=5.2e-17)*    +0.228 (p=4.7e-06)*   
+TC->CAD      +0.582 (p=8.9e-10)*    +0.338 (p=1.9e-12)*    +0.298 (p=9.5e-07)*   
+TG->CAD      +0.226 (p=3.3e-06)*    +0.076 (p=6.7e-02)     +0.066 (p=1.2e-01)    
+HbA1c->T2D   +1.512 (p=4.1e-13)*    +1.123 (p=4.4e-11)*    +0.987 (p=2.0e-13)*   
+
+READ: the CORE adiposity/lipid->CAD/HF cascade and the HbA1c->T2D positive control REPLICATE
+in the zero-overlap design (BMI->CAD, BMI->HF, LDL->CAD, TC->CAD, HbA1c->T2D, SBP->Stroke all p<0.05).
+Two honest nuances: (1) BMI->T2D is significant ONLY within TPMI (0.99); it is null in BBJ-within
+(-0.15) AND cross-cohort (-0.11) -> the strong within-TPMI edge is NOT confirmed zero-overlap, which
+both supports the EAS lean-diabetes hedge and validates the reviewer overlap concern for that edge.
+(2) SBP->CAD/HF attenuate to null cross-cohort (survive SBP->Stroke); consistent with reduced power
+(21 SBP instruments) or partial within-cohort inflation. The adiposity-common-driver headline is robust.

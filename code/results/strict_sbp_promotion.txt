@@ -1,0 +1,32 @@
+=== X->SBP promoted to strict allele-compatible matching (PRIMARY) ===
+
+Round-3 blocker 2. Estimates come from scripts/63_sbp_strict_mr.R on the step-62 strict set
+('match' + 'strand_flip' only; every strand-ambiguous variant dropped). Nothing is re-derived
+here. Network Bonferroni = 0.05/132 = 0.000379.
+
+edge              nSNP was  nSNP now      b was      b now       P was       P now  change
+BMI->SBP               505       452    -0.5779    -0.5237      0.0184      0.0411  status unchanged
+CAD->SBP               167       141    +1.8194    +1.4812    6.74e-10    1.11e-07  status unchanged
+eGFR->SBP              320       266    +0.5430    +2.2248        0.81       0.368  status unchanged
+HbA1c->SBP             281       281    +0.7981    +0.7981    0.000455    0.000455  status unchanged
+HDL->SBP               439       379    -0.9169    -0.8558     0.00011    0.000938  SIGNIFICANCE LOST
+HF->SBP                 44        38    +1.5595    +1.9409      0.0188     0.00595  status unchanged
+LDL->SBP               336       296    +0.3007    +0.3018       0.211       0.239  status unchanged
+Stroke->SBP             23        22    +1.9175    +1.7722      0.0539      0.0846  status unchanged
+T2D->SBP               116       110    +0.7552    +0.7352     2.3e-08    8.51e-08  status unchanged
+TC->SBP                397       347    +0.2298    +0.2260       0.306       0.353  status unchanged
+TG->SBP                416       370    +1.7514    +1.7418     2.9e-10    2.12e-09  status unchanged
+
+Bonferroni-significant edges : 59 -> 58
+Steiger-directed graph edges : 54 -> 53
+  lost   : ['HDL->SBP']
+  gained : none
+
+Edges whose significance status changed:
+  HDL->SBP: SIGNIFICANCE LOST
+
+The Egger, weighted-median and Cochran-Q columns for the X->SBP rows are REPLACED with the
+strict-set values from scripts/75_sbp_strict_pleiotropy.R, not carried over from the base
+set and not left blank. Carrying them would mix two instrument sets in one row; leaving
+them blank let a NaN Egger intercept read downstream as "no pleiotropy detected", which
+silently downgraded CAD->SBP in the native-scale ledger (round-4 Tier 1).

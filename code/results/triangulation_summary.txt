@@ -1,0 +1,56 @@
+================================================================================================
+ITEM 3 — POPULATION vs HOSPITAL  ->adiposity  triangulation  (the decisive selection-vs-biology test)
+================================================================================================
+
+QUESTION: the negative T2D/DM -> BMI edge appears in BOTH hospital EAS cohorts (BBJ, TPMI).
+  Selection/collider bias (disease-ascertained biobank) predicts it VANISHES in population cohorts.
+  Real EAS lean-diabetes biology predicts it PERSISTS in population cohorts.
+
+cohort / design           edge         nSNP    IVW b     IVW p     WM b      WM p  note
+------------------------------------------------------------------------------------------------
+BBJ  (hospital, JP)       T2D->BMI      127   -0.098   2.1e-07                     IVW sig neg
+TPMI (hospital, TW)       T2D->BMI       56   -0.046   7.1e-03                     IVW sig neg
+BBJ+TPMI meta             T2D->BMI      183   -0.069   4.5e-08   -0.071            fixed sig / random p6.5e-3
+------------------------------------------------------------------------------------------------
+KoGES(pop,KR) within      DM->BMI         9   -0.043   4.0e-01   -0.090   1.9e-08  IVW null(het Q p1e-52) / WM sig NEG
+KoGES(pop,KR) within      DM->WAIST       9   -0.022   6.2e-01   -0.052   3.1e-04  IVW null / WM sig NEG
+KoGES-DM->TWB-Waist 2smpl DM->Waist       6   -0.019   4.4e-01   -0.043   6.5e-03  no overlap; MC4R absent; WM sig NEG
+------------------------------------------------------------------------------------------------
+POSITIVE CONTROL (forward adiposity->diabetes, must be strongly POSITIVE):
+KoGES(pop,KR) within      BMI->DM        29    0.893   5.2e-07    0.612   9.0e-04  matches TPMI +0.99 / EUR +0.99  [pipeline OK]
+
+PER-SNP STRUCTURE of KoGES DM->BMI (9 analysed after harmonise; rs11257657 dropped as ambiguous palindrome):
+  6/9 instruments NEGATIVE = insulin-secretion/beta-cell T2D loci: CDKAL1 rs35612982, CDKN2A/B rs10811662,
+     HHEX rs11187138, KCNQ1 rs60808706, SLC30A8 rs11558471, HNF1B rs11658063.
+  1 near-null = PAX4 rs2233580 (+0.007). 2 POSITIVE outliers = adiposity loci: MC4R rs6567160 (+0.49),
+     12q24/ALDH2(HECTD4) rs2074356 (+0.27). Sign test 6/9 negative = exact binomial p=0.51 (NOT significant).
+  => IVW-random null; only median/mode go negative, and the negative cluster is MECHANISTICALLY CORRELATED
+     (all beta-cell loci) = one shared insulin->adiposity pathway represented many times, NOT an independent
+     valid majority. Q=264 (I2=0.97, p1.5e-52). LOO: no sign flip; dropping MC4R -> IVW-random -0.067 (p0.052).
+
+VERDICT  (CALIBRATED after adversarial verification, wf_b1e5d2ce stats-lens = PARTIALLY_REFUTED):
+  The population KoGES DM->BMI IVW POINT ESTIMATE (-0.043) MATCHES the hospital TPMI edge (-0.046) in sign
+  and magnitude => the negative ->BMI edge is NOT FALSIFIED in a population EAS cohort; it does not vanish as
+  a pure selection/collider would predict. **HOSPITAL SELECTION IS THEREFORE NOT REQUIRED** to explain the
+  ->BMI edges, and they cannot be dismissed as a BBJ/TPMI ascertainment artifact.
+  BUT a CAUSAL EAS T2D->lower-BMI effect is **NOT ESTABLISHED**: the population estimate is null/underpowered
+  (IVW-random -0.043, p0.40 under I2=0.97, 9 SNPs); the negative sign is carried by median/mode whose SEs do
+  NOT absorb the Q=264 overdispersion (WM p2.7e-9 is anti-conservative; heterogeneity-inflated WM p~0.24);
+  under BALANCED pleiotropy (Egger-int p0.49, no directional pleiotropy) IVW-random is the honest primary,
+  and the negative is carried by a mechanistically-correlated beta-cell cluster = plausible pleiotropy, not a
+  demonstrated exclusion-restriction-valid effect.
+
+  HONEST CEILING for the write-up:
+  'The negative ->BMI edge is not falsified in a population EAS cohort (KoGES point estimate matches the
+   hospital cohorts in sign and magnitude), so hospital selection is not required to explain it and it cannot
+   be dismissed as a disease-ascertainment artifact. However, population inference is null/underpowered and
+   the sign rests on robust estimators plus a mechanistically-correlated insulin-secretion locus cluster with
+   plausible pleiotropy, so a causal EAS T2D->lower-BMI effect is not established. The pattern is CONSISTENT
+   WITH the lean-diabetes hypothesis (Ke 2022) but does not prove it.'
+
+  UPDATES INTERPRETATION.md 3: reclassify the ->BMI edges from 'artifact-tier (BBJ selection)' to
+  'not a demonstrable selection artifact; an underpowered, mechanistically-plausible ancestry signal
+   consistent with lean-diabetes biology' (a hedged Tier-2 hypothesis, NOT an asserted Tier-1 finding).
+   The AHA stage-1(adiposity)->stage-2(dysglycemia) ordering is neither cleanly portable nor cleanly
+   falsified in EAS. Positive control BMI->DM +0.893 (p5e-7) confirms the FORWARD axis ports; only the
+   backward ->BMI edge is the ancestry-suggestive, underpowered signal.

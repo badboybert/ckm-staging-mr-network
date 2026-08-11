@@ -1,0 +1,31 @@
+=== Variant-level QC for the disease->SBP edges ===
+
+EXTRACTION AUDIT (37_complete_network.py, X->SBP block):
+  instrument rsIDs mapped to build37 positions : 3523
+  positions carrying >1 instrument rsID (collisions, first-seen wins) : 0
+  wanted positions with >1 SBP record (multiallelic, first-seen wins) : 0
+
+PER-EDGE ALLELE CONCORDANCE (exposure instrument vs the SBP record taken at its position):
+edge               n  match  flip  palin  mismatch  notSNV
+BMI->SBP         520    452     0     68         0       0
+TG->SBP          426    370     0     56         0       0
+HDL->SBP         449    379     0     70         0       0
+TC->SBP          402    347     0     55         0       0
+LDL->SBP         339    296     0     43         0       0
+HbA1c->SBP       335    281     0     54         0       0
+CAD->SBP         172    141     0     31         0       0
+HF->SBP           44     38     0      6         0       0
+T2D->SBP         119    110     0      9         0       0
+eGFR->SBP        327    266     0     61         0       0
+Stroke->SBP       23     22     0      1         0       0
+
+TOTAL across all X->SBP: 3156 matched variants — match 2702, strand-flip 0, palindromic 454, allele-mismatch 0, non-SNV 0
+
+READ:
+- 'allele_mismatch' and 'non-SNV' are variants where the SBP record at that coordinate is a
+  DIFFERENT variant from the instrument. Position-only matching cannot detect these; they are
+  the exposure the reviewer identified.
+- 'palindromic' variants are strand-ambiguous. harmonise_data(action=2) drops those with
+  intermediate frequency downstream, so they are a bound rather than an error.
+- The strict files keep only 'match' and 'strand_flip'. 63_sbp_strict_mr.R re-estimates
+  every X->SBP edge on them, CAD->SBP above all.

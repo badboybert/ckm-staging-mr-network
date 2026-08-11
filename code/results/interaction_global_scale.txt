@@ -1,0 +1,36 @@
+=== Does the interaction family survive a single global EUR->EAS scale offset? ===
+
+Family: 67 magnitude-eligible edges; Bonferroni 0.05/67 = 7.463e-04
+Global IV-weighted slope through the origin:  b_EAS = 0.4360 x b_EUR   (SE 0.0260, z vs 1 = -21.68)
+Regression-dilution correction factor: 1.0114  -> dilution-corrected slope 0.4410
+  (a correction factor near 1 means the offset is NOT explained by measurement error in b_EUR)
+
+Per-exposure median |b_EAS| / |b_EUR| (all of these traits are marked comparable):
+    HDL        0.32   (n=8)
+    CAD        0.36   (n=8)
+    TG         0.38   (n=8)
+    T2D        0.59   (n=8)
+    BMI        0.70   (n=9)
+    LDL        1.01   (n=8)
+    TC         1.06   (n=8)
+    SBP        1.73   (n=10)
+
+Bonferroni survivors, RAW (as step 60 reports)     : 14
+Bonferroni survivors, GLOBAL SCALE ABSORBED        : 12
+Overlap                                            : 6
+  lost when the offset is absorbed  (8): ['BMI->T2D', 'CAD->HF', 'CAD->T2D', 'HDL->T2D', 'LDL->TG', 'SBP->T2D', 'T2D->HF', 'T2D->Stroke']
+  gained when the offset is absorbed (6): ['LDL->CAD', 'SBP->Stroke', 'SBP->TC', 'TC->CAD', 'TC->LDL', 'TG->BMI']
+
+Opposite-sign among survivors: raw 9, absorbed 5
+
+READ:
+- The two analyses share only 6 of 14 / 12 edges. The IDENTITY of the
+  'significant ancestry interactions' is therefore NOT robust to a single nuisance parameter,
+  and no per-edge interaction claim should be made without disclosing this.
+- The offset is large (0.44) and precisely estimated (z = -21.7 against 1). It is not
+  regression dilution (correction factor 1.011).
+- The per-exposure spread above is the diagnostic that matters for the scale dictionary: traits
+  it marks equally comparable behave very differently, which is what rank-inverse-normalising
+  skewed traits (TG, HDL) against per-SD European traits would produce.
+- The manuscript already applies exactly this logic to SBP->CKD ('a power difference, not a
+  proven divergence'). Consistency requires extending it to the rest of the family.

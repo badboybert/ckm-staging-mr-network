@@ -1,0 +1,52 @@
+============================================================================================
+ITEM 1 — ApoB atherogenic-axis MVMR: resolving the HDL->CAD CAUSE false positive (Milestone 6.10)
+============================================================================================
+
+BACKGROUND: CAUSE returned HDL->CAD = CAUSAL (z=-2.46) = a FALSE POSITIVE at its documented boundary
+(proportional confounding via a correlated MARKER trait). The atherogenic axis (LDL/ApoB/TG) is the
+driver; HDL merely marks it. MVMR is the correct arbiter. ApoB (Sinnott-Armstrong 2021 UKB, N=435,744)
+added as an exposure; 124 common lipid instruments with complete ApoB/LDL/HDL/TG/CAD data (hg38->hg19).
+
+Univariable (marginal) total effects on CAD:
+  ApoB +0.452 (p2e-19) | LDL +0.511 (p3e-53) | HDL -0.305 (p7e-30) | TG +0.393 (p6e-37)
+
+model               exposure  direct b   direct p   condF   note
+--------------------------------------------------------------------------------------------
+# CLEAN atherogenic-axis test (ApoB represents the axis; NOT competing with its collinear twin LDL):
+ApoB_HDL_TG         ApoB       +0.292    3.9e-05    57.7   ApoB SURVIVES (strong condF 57.7)  <<< key
+ApoB_HDL_TG         HDL        -0.076    2.8e-01    85.3   124-SNP ApoB-subset: HDL -0.076 NS = POWER ARTIFACT (SE0.069); see 630-SNP below
+ApoB_HDL_TG         TG         +0.191    3.9e-02    66.4   attenuated, borderline
+# Reference axis-representative = LDL (same story, LDL as axis):
+LDL_HDL_TG          LDL        +0.350    1.5e-06   132.3   LDL SURVIVES (condF 132)
+LDL_HDL_TG          HDL        -0.119    8.4e-02    88.8   HDL attenuates to borderline-null
+LDL_HDL_TG          TG         +0.166    6.8e-02    64.1   attenuated, borderline
+# Why the joint 4-lipid model is uninformative for ApoB vs LDL (collinearity):
+ApoB_CAD            ApoB       -0.163    3.7e-01     9.2   ApoB condF collapses to 9.2 (weak) when LDL is co-modelled
+ApoB_CAD            LDL        +0.508    8.1e-03    13.6   LDL retains +0.51 but condF only 13.6
+ApoB_CAD            HDL        -0.139    5.6e-02    44.2   attenuates to -0.139 (p0.056)
+ApoB_LDL            ApoB       +0.049    7.8e-01     9.6   head-to-head: both weak; cannot separate ApoB from LDL
+ApoB_LDL            LDL        +0.346    6.7e-02    16.0   
+# ★ FULL-DENSITY reference (630 SNPs, NO ApoB-coverage restriction; verifier-prompted, independently reproduced):
+LDL_HDL_TG_630      LDL        +0.499    2.3e-47   117.3   LDL survives strongly
+LDL_HDL_TG_630      HDL        -0.165    1.2e-05    58.5   ★ HDL RESIDUAL SURVIVES (not null)
+LDL_HDL_TG_630      TG         +0.140    9.0e-04    47.6   TG survives
+--------------------------------------------------------------------------------------------
+VERDICT (CALIBRATED after adversarial verification, wf_b1e5d2ce item1-lens = PARTIALLY_REFUTED):
+  1. The atherogenic lipoprotein axis is the causal lipid driver of CAD: ApoB direct +0.292 (p3.9e-5,
+     condF 57.7) representing the axis; LDL direct +0.499 (p2e-47, condF 117) at full density. Both survive
+     strongly. HONEST BOUND: ApoB & LDL are too collinear to separate (ApoB condF collapses to 9.2 in the
+     joint ApoB+LDL model) => claim is AXIS-level (Richardson 2020, Sniderman), NOT ApoB-over-LDL.
+  2. ★ HDL->CAD ATTENUATES ~50% under MVMR but does NOT dissolve: marginal -0.305 (p7e-30) -> conditional
+     -0.165 (p1.15e-5) at FULL instrument density (630-SNP LDL+HDL+TG). The near-null in the ApoB-restricted
+     124-SNP model (-0.076/-0.119) was a POWER ARTIFACT (HDL SE 0.069 vs 0.037 at full density; ApoB covers
+     only 143/817 union instruments). => MVMR shows HDL's marginal CAD signal is SUBSTANTIALLY (~46%)
+     atherogenic-axis confounding, but a RESIDUAL direct HDL->CAD association SURVIVES.
+  3. ★ CONSEQUENCE for the CAUSE HDL->CAD false-positive (6.10): MVMR does NOT by itself refute a causal HDL
+     contribution — a residual survives. The 'HDL is non-causal' negative-control status rests on the WIDER
+     evidence (Voight 2012 PMID 22607825 HDL genetic-score->MI null; failed HDL-raising trials [CETP inhib.];
+     Holmes 2015), which this MVMR is CONSISTENT with (large attenuation) but does not independently prove.
+     Honest read: 'MVMR attenuates HDL ~50%, consistent with major atherogenic-axis confounding of the CAUSE
+     verdict; full non-causality is established by external trial/MR evidence, not this analysis alone.'
+  4. TG retains a modest direct effect (+0.14, p9e-4 at full density). Does NOT impugn LDL->CAD (true
+     positive) or CAD->HF. No computational/harmonisation/liftover error (all reproduce; liftover is
+     hg19->hg38 to match ApoB then harmonise ApoB back to the hg19 panel allele; univariable ApoB uses 210).

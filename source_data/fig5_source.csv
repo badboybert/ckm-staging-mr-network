@@ -1,0 +1,35 @@
+panel,row,label,group,b,se,p,source_file
+a,SBP → CKD EUR,SBP → CKD,EUR,+0.0143,0.0017,1.11e-17,results/zheng_ckd.txt
+a,BMI → CKD EUR,BMI → CKD,EUR,+0.1429,0.0286,5.60e-07,results/zheng_ckd.txt
+a,SBP → CKD EAS,SBP → CKD,EAS,+0.0979,0.2240,6.62e-01,results/zheng_ckd.txt
+a,BMI → CKD EAS,BMI → CKD,EAS,+0.4081,0.1440,4.60e-03,results/zheng_ckd.txt
+b,BBJ  T2D→BMI (IVW),BBJ  T2D→BMI (IVW),Hospital biobank,-0.0977180946619953,0.0188343154376614,2.122215607778e-07,results/network_eas_edges.csv
+b,TPMI T2D→BMI (IVW),TPMI T2D→BMI (IVW),Hospital biobank,-0.0455554182745269,0.0169227229734513,0.0071031891815979,results/network_tpmi_full.csv
+b,BBJ+TPMI meta (fixed),BBJ+TPMI meta (fixed),Hospital biobank,-0.06885605621388788,0.012587915309901667,4.500034123146057e-08,results/network_eas_meta_fixed.csv
+b,BBJ+TPMI meta (random),BBJ+TPMI meta (random),Hospital biobank,-0.07098156687770574,0.026073107382442277,0.006480859637042174,results/network_eas_meta_random.csv
+b,KoGES DM→BMI (IVW),KoGES DM→BMI (IVW),Population cohort,-0.0430764987048759,0.0513639485698689,0.40166439714743,results/koges_triangulation.csv
+b,KoGES DM→BMI (WM),KoGES DM→BMI (WM),Population cohort,-0.0900643634835657,0.015,1.85025679475685e-08,results/koges_triangulation.csv (wm_b; SE from 29b_koges_diag.R)
+b,KoGES DM→Waist (WM),KoGES DM→Waist (WM),Population cohort,-0.0517339599992636,0.015,0.000313134322964311,results/koges_triangulation.csv (wm_b; SE from 29b_koges_diag.R)
+b,KoGES-DM→TWB-Waist (WM),KoGES-DM→TWB-Waist (WM),Population cohort,-0.043,0.016,,results/triangulation_summary.txt (30b_twb_edge_mr.R)
+d,Fixed-effect IVW,Fixed-effect IVW,survives,-0.06885605621388788,0.012587915309901667,4.500034123146057e-08,results/network_eas_meta_fixed.csv
+d,Random-effect IVW,Random-effect IVW,fails,-0.07098156687770574,0.026073107382442277,0.006480859637042174,results/network_eas_meta_random.csv
+d,Hartung–Knapp (conservative),Hartung–Knapp (conservative),fails,-0.071,0.1688265306122449,0.2238,results/h4_leandiabetes.txt (52_h4_leandiabetes.R)
+c,rs11658063,HNF1B (rs11658063),β-cell / insulin-secretion,-0.147,0.038,,results/triangulation_summary.txt (29b_koges_diag.R)
+c,rs35612982,CDKAL1 (rs35612982),β-cell / insulin-secretion,-0.124,0.018,,results/triangulation_summary.txt (29b_koges_diag.R)
+c,rs11187138,HHEX (rs11187138),β-cell / insulin-secretion,-0.124,0.032,,results/triangulation_summary.txt (29b_koges_diag.R)
+c,rs60808706,KCNQ1 (rs60808706),β-cell / insulin-secretion,-0.1,0.025,,results/triangulation_summary.txt (29b_koges_diag.R)
+c,rs10811662,CDKN2A/B (rs10811662),β-cell / insulin-secretion,-0.073,0.023,,results/triangulation_summary.txt (29b_koges_diag.R)
+c,rs11558471,SLC30A8 (rs11558471),β-cell / insulin-secretion,-0.069,0.033,,results/triangulation_summary.txt (29b_koges_diag.R)
+c,rs2233580,PAX4 (rs2233580),β-cell / insulin-secretion,0.007,0.022,,results/triangulation_summary.txt (29b_koges_diag.R)
+c,rs2074356,12q24/ALDH2 (rs2074356),adiposity,0.272,0.041,,results/triangulation_summary.txt (29b_koges_diag.R)
+c,rs6567160,MC4R (rs6567160),adiposity,0.493,0.043,,results/triangulation_summary.txt (29b_koges_diag.R)
+e,BMI→HbA1c,BMI→HbA1c,EUR,0.225,,3.2e-29,results/eur_vs_eas_comparison.csv
+e,BMI→HbA1c,BMI→HbA1c,EAS,-0.234,,2.6e-02,results/eur_vs_eas_comparison.csv
+e,HbA1c→HF,HbA1c→HF,EUR,0.048,,1.5e-02,results/eur_vs_eas_comparison.csv
+e,HbA1c→HF,HbA1c→HF,EAS,-0.180,,1.4e-03,results/eur_vs_eas_comparison.csv
+e,TG→LDL,TG→LDL,EUR,0.277,,1.8e-27,results/eur_vs_eas_comparison.csv
+e,TG→LDL,TG→LDL,EAS,-0.115,,2.5e-02,results/eur_vs_eas_comparison.csv
+e,HbA1c→TG,HbA1c→TG,EUR,0.069,,3.5e-04,results/eur_vs_eas_comparison.csv
+e,HbA1c→TG,HbA1c→TG,EAS,-0.091,,5.4e-03,results/eur_vs_eas_comparison.csv
+e,T2D→HDL,T2D→HDL,EUR,-0.071,,2.7e-05,results/eur_vs_eas_comparison.csv
+e,T2D→HDL,T2D→HDL,EAS,0.034,,7.3e-03,results/eur_vs_eas_comparison.csv

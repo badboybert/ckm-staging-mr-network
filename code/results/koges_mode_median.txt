@@ -1,0 +1,15 @@
+KoGES population-cohort DM->BMI robust-estimator battery (traceability for the →BMI triangulation).
+Source: scripts/29b_koges_diag.R (re-confirmed 2026-07-15 during pre-submission verification).
+These robust estimators supplement the IVW/weighted-median/MR-Egger values already in koges_triangulation.csv.
+
+Edge: KoGES_DM -> KoGES_BMI  (population cohort; 9 instruments)
+  IVW (random-effects) : -0.043   (p = 0.40; Q = 264, I^2 = 0.97)  [koges_triangulation.csv]
+  Weighted median      : -0.090   (p = 1.85e-8)                     [koges_triangulation.csv]
+  Simple median        : -0.073
+  Weighted mode        : -0.102
+  MR-Egger slope       : -0.161   (intercept p = 0.49)              [koges_triangulation.csv]
+
+Interpretation (per FINDINGS_LEDGER.md §10 / INTERPRETATION.md §3): the IVW point estimate (-0.043) matches the
+hospital TPMI edge (-0.046); robust estimators stay negative; under balanced pleiotropy (Egger intercept p = 0.49)
+the heterogeneity-appropriate IVW-random null is the honest primary. The edge is NOT a demonstrable ascertainment
+artifact and a causal effect is NOT established -- an underpowered, mechanistically-plausible lean-diabetes signal.

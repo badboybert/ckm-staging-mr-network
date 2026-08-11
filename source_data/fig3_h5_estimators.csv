@@ -1,0 +1,13 @@
+edge,estimator,b,se,p,nsnp
+CAD→T2D,IVW,0.1675,0.0349,1.56e-06,128
+CAD→T2D,Weighted median,0.0983,0.0308,0.0014,128
+CAD→T2D,Weighted mode,0.1204,0.2129,0.573,128
+CAD→T2D,Penalised WM,0.0951,0.0336,0.0046,128
+CAD→T2D,MR-Egger slope,-0.0112,0.0686,0.87,128
+CAD→T2D,Egger intercept,0.0109,,0.00329,128
+HF→T2D,IVW,0.4217,0.119,0.000393,33
+HF→T2D,Weighted median,0.324,0.0686,2.32e-06,33
+HF→T2D,Weighted mode,0.3392,0.1406,0.0218,33
+HF→T2D,Penalised WM,0.3603,0.0715,4.6e-07,33
+HF→T2D,MR-Egger slope,0.3873,0.377,0.312,33
+HF→T2D,Egger intercept,0.0014,,0.924,33

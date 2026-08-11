@@ -1,0 +1,11 @@
+=== COMPLETED 132-edge network staging test (2026-07-19) ===
+Edges tested: 132 (all 132 non-self directions among 12 traits; SBP now an outcome, Stroke now an exposure)
+Bonferroni: 0.05/132 = 3.788e-04
+Significant + Steiger-correct staged edges: 54
+Cross-stage concordance: 0.926 (25/27 forward)
+Label-permutation p (10,000): 0.0012
+
+CONTRAST vs original 111-edge network: concordance 0.926 -> 0.926 (UNCHANGED); perm p 1.8e-3 -> 1.2e-3.
+Completion added a strong NEW backward edge CAD->SBP (b=+1.82, p=6.7e-10, Steiger-correct),
+and the stricter 0.05/132 threshold dropped HF->T2D from the significant set. Net: 2 backward edges
+(CAD->SBP, CAD->T2D); the staging concordance and its significance are ROBUST to completing the network.

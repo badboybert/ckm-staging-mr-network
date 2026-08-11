@@ -1,0 +1,33 @@
+=== Degree-preserving rewiring null: mixing diagnostics ===
+
+Round-3 blocker 3. The shipped implementation attempted 3x the edge count in double-edge
+swaps per replicate (162 attempts on this graph), skipped invalid proposals without
+retrying, and reported no realised-swap, acceptance or turnover statistic. Chain length
+below is in SUCCESSFUL swaps per edge, and every diagnostic the review asked for is
+reported. 2,000 replicates per cell; seeds [42, 202607, 8675309].
+
+Observed concordance 0.9259 (25/27); staging graph 53 edges.
+
+swaps/edge     seed        P  accept%  turnover%  orig kept%  capped
+        10       42   0.2509      8.9       29.5        70.5       0
+        10   202607   0.2619      8.9       29.5        70.5       0
+        10  8675309   0.2574      8.9       29.5        70.5       0
+        25       42   0.2599      8.9       29.5        70.5       0
+        25   202607   0.2449      8.9       29.6        70.4       0
+        25  8675309   0.2624      8.9       29.5        70.5       0
+        50       42   0.2789      8.9       29.5        70.5       0
+        50   202607   0.2949      8.9       29.6        70.4       0
+        50  8675309   0.2704      8.9       29.6        70.4       0
+       100       42   0.2749      8.9       29.4        70.6       0
+       100   202607   0.2659      8.9       29.7        70.3       0
+       100  8675309   0.2814      8.9       29.4        70.6       0
+
+P across ALL chain lengths and seeds : min 0.2449, max 0.2949
+P at >=25 successful swaps per edge   : min 0.2449, max 0.2949 (spread 0.0500)
+
+READ:
+  The null is NOT exceeded at any chain length or seed (every P > 0.05).
+  P is stable once the chain reaches 25 successful swaps per edge (spread 0.0500 across seeds and lengths).
+  Turnover shows the chain leaves the observed graph rather than sampling its neighbourhood.
+
+  The shipped staging demotion therefore rests on a measured chain, not an assumed one.

@@ -1,0 +1,13 @@
+node,concordance
+BMI,0.9
+HF,0.9
+Stroke,0.905
+HDL,0.913
+TG,0.913
+HbA1c,0.917
+LDL,0.92
+TC,0.92
+eGFR,0.926
+T2D,0.955
+SBP,0.957
+CAD,1.0

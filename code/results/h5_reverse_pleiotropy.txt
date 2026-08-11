@@ -1,0 +1,57 @@
+=== H5: pleiotropy-robust methods for the reverse feedback edges (independent of CAUSE) ===
+
+--- CAD -> T2D : 128 instruments ---
+   Inverse variance weighted    b=+0.1675 se=0.0349 p=1.56e-06
+   MR Egger                     b=-0.0112 se=0.0686 p=0.87
+   Weighted median              b=+0.0983 se=0.0308 p=0.0014
+   Weighted mode                b=+0.1204 se=0.2129 p=0.573
+   Penalised weighted median    b=+0.0951 se=0.0336 p=0.0046
+   MR-Egger intercept = +0.0109 (p=0.00329)  [directional pleiotropy]
+
+Radial IVW
+
+                  Estimate  Std.Error   t value     Pr(>|t|)
+Effect (Mod.2nd) 0.1675527 0.03487516  4.804356 1.552500e-06
+Iterative        0.1675527 0.03487516  4.804357 1.552499e-06
+Exact (FE)       0.1794566 0.01521644 11.793596 4.211674e-32
+Exact (RE)       0.1696709 0.03592515  4.722899 6.056916e-06
+
+
+Residual standard error: 2.294 on 127 degrees of freedom
+
+F-statistic: 23.08 on 1 and 127 DF, p-value: 4.3e-06
+Q-Statistic for heterogeneity: 668.3105 on 127 DF , p-value: 2.07894e-74
+
+ Outliers detected 
+Number of iterations = 3
+   radial-IVW b=+0.1676; Q-outliers flagged=42
+
+--- HF -> T2D : 33 instruments ---
+   Inverse variance weighted    b=+0.4217 se=0.1190 p=0.000393
+   MR Egger                     b=+0.3873 se=0.3770 p=0.312
+   Weighted median              b=+0.3240 se=0.0686 p=2.32e-06
+   Weighted mode                b=+0.3392 se=0.1406 p=0.0218
+   Penalised weighted median    b=+0.3603 se=0.0715 p=4.6e-07
+   MR-Egger intercept = +0.0014 (p=0.924)  [directional pleiotropy]
+
+Radial IVW
+
+                  Estimate  Std.Error   t value     Pr(>|t|)
+Effect (Mod.2nd) 0.4215371 0.11856950  3.555190 3.777066e-04
+Iterative        0.4215372 0.11856975  3.555183 3.777161e-04
+Exact (FE)       0.5139382 0.04193127 12.256681 1.547070e-34
+Exact (RE)       0.4313584 0.14270839  3.022656 4.902334e-03
+
+
+Residual standard error: 2.873 on 32 degrees of freedom
+
+F-statistic: 12.64 on 1 and 32 DF, p-value: 0.0012
+Q-Statistic for heterogeneity: 264.1507 on 32 DF , p-value: 2.444119e-38
+
+ Outliers detected 
+Number of iterations = 3
+   radial-IVW b=+0.4215; Q-outliers flagged=10
+
+READ: an edge is robust to CAUSE's failure mode if the mode/median-based estimators (which assume
+the plurality/majority of instruments are valid) AGREE with IVW in sign and remain non-null, with
+no dominant Egger-intercept. Report these as the CAUSE-independent check on CAD->T2D and HF->T2D.

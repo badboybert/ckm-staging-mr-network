@@ -1,0 +1,13 @@
+=== Genome-wide-strict staging robustness variant (on the completed 132-edge network) ===
+Edge-inclusion threshold raised from network Bonferroni (0.05/132) to genome-wide significance (P < 5e-8); Steiger-directed staged edges only.
+Significant Steiger-correct causal edges: 39 over 11 nodes
+
+[3] Cross-stage edges: 19  | forward(low->high AHA)=19  backward(high->low)=0
+    Stage-order CONCORDANCE = 1.000
+    Backward (AHA-discordant) edges: none
+    (Since X->SBP was promoted to strict allele-compatible matching, the reverse CAD->SBP index-event edge no longer clears the genome-wide bar: P = 1.11e-07 against 5e-8, so it drops out along with CAD->T2D at P = 1.6e-6. The resulting 1.000 is HIGHER than the primary 0.926 only because the discordant edge fell below a threshold, and is not independent evidence for the ordering.)
+
+[5] Concordance vs label-permutation null (EXACT enumeration of 1,320 distinct labelings): empirical p = 0.000758  (exact, 1/1320)
+    => concordant with AHA order beyond chance
+
+NOTE: tests necessary POPULATION-LEVEL causal-ordering conditions, not within-person progression.

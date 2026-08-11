@@ -1,0 +1,47 @@
+=== E2: constrained-null battery for staging concordance (132-edge network) ===
+Edges tested=132, Bonferroni=0.05/132=3.79e-04; significant+Steiger staged edges=53 over 12 nodes
+OBSERVED cross-stage concordance = 0.926 (25/27 forward)
+
+A. Simple label permutation (baseline / current method): P = 0.0015  [EXACT: 3/1980]
+B. Phenotype-class-constrained permutation (shuffle stage within trait-class blocks): P = 1.0000
+   [class blocks: {adip:1, disease:3, lipid:4, glyc:2, bp:1, kidney:1}]
+C. Degree-preserving edge-rewiring null (topology test, in/out-degree fixed): P = 0.2696
+   chain: 50 SUCCESSFUL double-edge swaps per edge; mixing diagnostics across 10/25/50/100 swaps per edge and three seeds in results/degree_null_mixing.txt
+D. Complete-pair subgraph (both directions estimable): 53 sig edges; cross-stage concordance = 0.926 (25/27); label-perm P = 0.0015
+E. Leave-one-node-out concordance (drop each node, recompute):
+     drop BMI   : concordance 0.900 (18/20)
+     drop HF    : concordance 0.900 (18/20)
+     drop Stroke: concordance 0.905 (19/21)
+     drop HDL   : concordance 0.913 (21/23)
+     drop TG    : concordance 0.913 (21/23)
+     drop HbA1c : concordance 0.917 (22/24)
+     drop LDL   : concordance 0.920 (23/25)
+     drop TC    : concordance 0.920 (23/25)
+     drop eGFR  : concordance 0.926 (25/27)
+     drop T2D   : concordance 0.955 (21/22)
+     drop SBP   : concordance 0.957 (22/23)
+     drop CAD   : concordance 1.000 (17/17)
+   -> worst-case leave-one-out concordance = 0.900 (observed 0.926); no single node drives it
+F. Drop SBP + Stroke: 38 edges; cross-stage concordance = 0.944 (17/18); label-perm P = 0.0056
+G. Bootstrap 95% CI on concordance (27 cross-stage edges): 0.926 [0.815, 1.000]
+
+SUMMARY (honest, calibrated):
+ROBUST: the concordance 0.926 is significant vs LABEL permutation (A, P=0.0015) — the specific
+stage assignment matters, you cannot relabel which trait is stage 1/2/4 and preserve it. It survives
+leave-one-node-out (worst 0.900; the 2 discordant edges both originate from CAD, so dropping CAD
+gives 1.000), dropping the two structurally-special nodes (F, 0.944, P=0.0056), and its bootstrap
+95% CI [0.815, 1.000] excludes 0.5. D (complete-pair subgraph) now equals A because completing
+the network to 132 edges made EVERY pair estimable both ways.
+
+TWO HONEST LIMITATIONS the battery exposes (report, do NOT bury):
+1. The phenotype-class-constrained permutation is DEGENERATE (B, P=1.0000): trait class and AHA
+   stage are PERFECTLY NESTED here (each of the 6 trait classes maps to exactly one stage), so there
+   is zero within-class stage variance to permute. This null is uninformative in this design, NOT
+   evidence for or against the signal.
+2. The degree-preserving edge-rewiring null is NOT exceeded (C, P=0.2696): given the exposure/outcome
+   role structure (risk factors are high-out-degree senders, diseases high-in-degree receivers), a
+   randomly-rewired graph with the SAME degree sequence achieves comparable concordance ~1/3 of the
+   time. So the low->high concordance substantially REFLECTS the trait role structure. Read the staging
+   test as CORROBORATING the AHA order given the trait roles (the stage labels matter, P<0.01), NOT as
+   independent proof beyond the fact that risk factors are instrumented as exposures and diseases as outcomes.
+   -> the manuscript must CALIBRATE the staging claim accordingly (this is exactly reviewer C3's concern).

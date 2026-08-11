@@ -1,0 +1,34 @@
+=== Formal HFpEF vs HFrEF between-subtype heterogeneity test ===
+
+H0: beta_HFpEF = beta_HFrEF for the same exposure.
+z = (b1 - b2) / sqrt(se1^2 + se2^2 - 2*rho*se1*se2);  Cochran Q on 1 df at rho = 0.
+
+Enzan 2025 shares ONE control set between the two outcomes:
+  HFpEF 26,743 cases / 456,520 controls
+  HFrEF 23,749 cases / 456,520 controls  (same controls; cases disjoint)
+  Lin-Sullivan induced correlation from shared controls: rho = 0.0523
+
+Positive rho SHRINKS Var(b1-b2), so the rho = 0 column is the CONSERVATIVE test for a difference.
+A difference significant at rho = 0 is significant a fortiori; a NON-significant one at rho = 0
+does not establish equivalence, because the better-powered correlated test could still reject.
+
+exposure      b_HFpEF    b_HFrEF      diff    P(rho=0.00)    P(rho=0.05)    P(rho=0.10)    P(rho=0.25)    P(rho=0.50)  Q_p(rho=0)  verdict
+------------------------------------------------------------------------------------------------------------------------------------------
+BMI           +0.5852    +0.5651   +0.0201          0.736          0.729          0.722          0.697          0.635       0.736  no difference detected — NOT equivalence
+CAD           +0.1634    +0.3786   -0.2151       2.24e-09       8.31e-10       3.06e-10       5.95e-12       5.76e-17    2.24e-09  DIFFERENT (significant at the conservative rho = 0)
+HbA1c         +0.0228    +0.1266   -0.1039         0.0711         0.0638         0.0571         0.0372         0.0107      0.0711  no difference detected — NOT equivalence
+LDL           +0.0939    +0.1949   -0.1010          0.113          0.103         0.0945         0.0673         0.0255       0.113  no difference detected — NOT equivalence
+SBP           +0.0197    +0.0224   -0.0027          0.533          0.522          0.511          0.472          0.381       0.533  no difference detected — NOT equivalence
+T2D           +0.0135    +0.0994   -0.0860        0.00752        0.00604        0.00484        0.00203       0.000158     0.00752  DIFFERENT (significant at the conservative rho = 0)
+TC            +0.0940    +0.1819   -0.0879           0.12          0.111          0.102          0.073         0.0283        0.12  no difference detected — NOT equivalence
+TG            +0.0665    +0.2156   -0.1491         0.0255         0.0219         0.0187         0.0102        0.00183      0.0255  DIFFERENT (significant at the conservative rho = 0)
+
+Within-family Bonferroni over 8 exposures: 0.00625
+
+READ:
+  CAD: subtype difference survives Bonferroni (P = 2.24e-09); the larger estimate is HFrEF.
+  BMI: NO difference detected (P = 0.74). This does not license 'comparable' or 'equivalent' — it is an absence of evidence, and the correlated test is better powered.
+  HbA1c: NO difference detected (P = 0.07). This does not license 'comparable' or 'equivalent' — it is an absence of evidence, and the correlated test is better powered.
+  LDL: NO difference detected (P = 0.11). This does not license 'comparable' or 'equivalent' — it is an absence of evidence, and the correlated test is better powered.
+  SBP: NO difference detected (P = 0.53). This does not license 'comparable' or 'equivalent' — it is an absence of evidence, and the correlated test is better powered.
+  TC: NO difference detected (P = 0.12). This does not license 'comparable' or 'equivalent' — it is an absence of evidence, and the correlated test is better powered.
