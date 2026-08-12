@@ -33,7 +33,13 @@ spec <- data.frame(
   expect = c("LDL causal (statin / PCSK9 RCTs)","Adiposity strongly causal","Glycaemia definitional",
              "Adiposity causal","BP causal (per mmHg)","Atherogenic cholesterol causal",
              "TG-rich lipoprotein causal","Adiposity causal","BP causal (per mmHg)",
-             "Non-causal: inverse = confounded\n(attenuates in MVMR, Fig 6)"),
+             # Round 5 (M2). Two defects in one label. "Non-causal … confounded" asserts more than
+             # the design gives — MVMR shows attenuation under conditioning, not non-causality, and
+             # the manuscript says so. And "Fig 6" is a stale main-figure reference: the 2026-07-25
+             # migration moved main Figure 6 to Supplementary Figure S7, but the rewrite only ever
+             # touched .md sources, so this literal inside a RENDERER survived — and Gate F21, which
+             # catches dangling main-figure callouts, reads text surfaces and not PDF text layers.
+             "Marginal inverse association attenuates\nafter multivariable conditioning\n(Supplementary Figure S7)"),
   stringsAsFactors = FALSE)
 
 d <- do.call(rbind, lapply(seq_len(nrow(spec)), function(i){

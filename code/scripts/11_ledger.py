@@ -109,7 +109,12 @@ def main():
             elif rev_sig and rev_clean and mag_ok:
                 verdict="DISCORDANT"                 # genuine bidirectional / AHA-violating
             elif rev_sig and (not rev_st):
-                verdict="CONCORDANT"                 # reverse sig but Steiger-WRONG-direction = confounded
+                # Steiger wrong-direction is a variance-explained DIRECTIONALITY criterion: it
+                # says the reverse estimate is not directionally supported. It does NOT prove
+                # confounding — the same pattern arises from shared instruments, pleiotropy or
+                # sample overlap. The prose gloss "and so confounded rather than causal" was
+                # imported from this comment and shipped through five review rounds.
+                verdict="CONCORDANT"                 # reverse sig but not directionally supported
             elif (not rev_sig) and (not rev_st):
                 verdict="CONCORDANT"                 # reverse NS AND wrong-direction = doubly not a threat
             elif (not rev_sig) and powered:

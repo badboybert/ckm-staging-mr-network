@@ -20,7 +20,6 @@ cannot fall out of step with the figures.
 | Supplementary Figure S4 | `forward_local_edges.csv`, `leaveoneout_headline.csv` | results |
 | Supplementary Figure S5 | `forward_local_edges.csv`, `sensitivity_noukb_edges.csv`, `suppfig5_source.csv` | figures/suppfig_data, results |
 | Supplementary Figure S6 | `fig5_source.csv`, `forward_local_edges.csv`, `interaction_global_scale.csv`, `network_whradjbmi.csv` | figures/suppfig_data, results |
-| Supplementary Figure S6 | `suppfig6_null_BBJ.csv`, `suppfig6_null_EUR.csv`, `suppfig6_null_TPMI.csv`, `suppfig6_observed.csv` | figures/suppfig_data |
 | Supplementary Figure S7 | `fig1_staging_stat.csv`, `fig2_mediation.csv`, `mvmr_apob.csv`, `mvmr_lipid_fulldensity.csv` | figures/data, results |
 | Supplementary Tables S1–S22 | `edges_standardised.csv`, `koges_triangulation.csv`, `steiger_lor.csv`, `network_eas_meta_fixed.csv`, `network_eas_meta_random.csv` (plus the figure files above) | results |
 

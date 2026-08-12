@@ -86,6 +86,32 @@ import re as _re_mod
 _re_disp = _re_mod.compile(r"(?<=[A-Za-z0-9])->(?=[A-Za-z0-9])")
 
 
+COL_W = 13.5          # the width every data column is set to, below
+COL_W_A = 16          # column A is wider
+CHARS_PER_UNIT = 1.0  # openpyxl column width is ~1 character per unit at the default font
+PT_PER_LINE = 12.6    # 11 pt caption text at single spacing
+
+
+def cap_height(text, ncol, pt=PT_PER_LINE, floor=30.0, usable=None):
+    """Row height that actually fits a wrapped caption across a merged row.
+
+    Round 5 (M4). Every caption row was pinned at 30 pt, which fits two lines. Captions here run to
+    1,000+ characters, so the long ones were visibly CLIPPED in the shipped workbook — S14, S17, S18
+    and S21 among them — and the workbook is Additional file 3, a published record. A fixed height is
+    a hand-maintained constant standing in for a computed one: it was right for the captions that
+    existed when it was typed and wrong for every one written since. Derive it instead.
+
+    `usable` is the merged width in openpyxl column units; pass it when the sheet does not use the
+    default widths (the Contents sheet is 8/62/46, not 16/13.5/13.5, and assuming the default
+    under-counted its width by two thirds and left it the only clipped row in the book).
+    """
+    if usable is None:
+        usable = COL_W_A + COL_W * max(0, ncol - 1)
+    per_line = max(20.0, usable * CHARS_PER_UNIT)
+    lines = max(1, math.ceil(len(str(text)) / per_line))
+    return max(floor, lines * pt + 6.0)
+
+
 def write_sheet(wb, name, caption, cols, rows, note=None):
     """cols = list of (src_key, display_name, kind) where kind in {b,se,p,int,str}.
     number formats: b=0.0000, se=0.0000, p=0.00E+00, int=0, str=general."""
@@ -97,7 +123,7 @@ def write_sheet(wb, name, caption, cols, rows, note=None):
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=ncol)
     c = ws.cell(1, 1, caption); c.fill = CAP_FILL; c.font = CAP_FONT
     c.alignment = Alignment(wrap_text=True, vertical="center")
-    ws.row_dimensions[1].height = 30
+    ws.row_dimensions[1].height = cap_height(caption, ncol)
     # header
     for j, (_, disp, _) in enumerate(cols, 1):
         h = ws.cell(2, j, disp); h.fill = HDR_FILL; h.font = HDR_FONT
@@ -121,7 +147,10 @@ def write_sheet(wb, name, caption, cols, rows, note=None):
         nr = 3 + len(rows) + 1
         ws.merge_cells(start_row=nr, start_column=1, end_row=nr, end_column=ncol)
         nc = ws.cell(nr, 1, note); nc.font = Font(italic=True, size=9, color="595959")
-        nc.alignment = Alignment(wrap_text=True)
+        nc.alignment = Alignment(wrap_text=True, vertical="top")
+        # The bottom note is merged across the same width and clips for exactly the same reason the
+        # caption did; it was never given a height at all, so it inherited the single-line default.
+        ws.row_dimensions[nr].height = cap_height(note, ncol, pt=11.4, floor=14.0)
     # widths
     for j in range(1, ncol + 1):
         ws.column_dimensions[get_column_letter(j)].width = 13.5
@@ -144,7 +173,10 @@ assert _mt, "could not read the canonical title from FRONT_MATTER.md"
 CANON_TITLE = " ".join(_mt.group(1).split())
 tc = toc.cell(1, 1, f"{CANON_TITLE} — Supplementary Tables")
 tc.fill = CAP_FILL; tc.font = CAP_FONT; tc.alignment = Alignment(wrap_text=True, vertical="center")
-toc.row_dimensions[1].height = 44
+# The Contents title is built here rather than through write_sheet, so it needs the same derived
+# height — with this sheet's own column widths (8 + 62 + 46), not the default ones.
+toc.row_dimensions[1].height = cap_height(f"{CANON_TITLE} — Supplementary Tables", 3,
+                                          usable=8 + 62 + 46, floor=44.0)
 # Round 4 (T2-10): this column used to be headed "Source (results/)" — a directory in OUR build tree
 # that no reader has. The filenames themselves are fine and useful: they name artifacts in the
 # deposited analysis repository, which the Code availability statement points at. Only the location
@@ -176,7 +208,7 @@ TOC = [
     ("S18","Adiposity distribution: WHRadjBMI (Pulit 2019)", "network_whradjbmi.csv"),
     ("S19","Zero-overlap cross-cohort MR (BBJ instruments → TPMI outcomes)", "network_crosscohort_bbj_tpmi.csv"),
     ("S20","Steiger direction margins for every staging-graph edge", "steiger_margin.csv"),
-    ("S21","Strict allele-compatible X→SBP edges (PRIMARY) vs the position-only set they replace", "sbp_strict_mr.csv"),
+    ("S21","Strict allele-compatible X→SBP primary analysis with position-only sensitivity comparison", "sbp_strict_mr.csv"),
     ("S22","Degree-preserving null: mixing diagnostics across chain lengths and seeds", "degree_null_mixing.csv"),
 ]
 for i, (t, title, src) in enumerate(TOC, 3):
@@ -509,7 +541,11 @@ write_sheet(wb, "S13_CKD_node",
     "IVW and weighted median significant, clean Egger intercept) versus pleiotropy-suspect (HDL, TG: weighted median "
     "null, significant Egger intercept). CKD→cardiovascular edges are null but underpowered (~24 instruments).",
     NET16_COLS, read_csv("network_ckd.csv"),
-    note="This node is distinct from the Zheng-replication SBP→CKD / BMI→CKD comparison shown for the ancestry-divergence analysis (Fig 5a), which uses a separate CKD analysis.")
+    # Round 5. The fourth surface of the stale main-figure class: old main Figure 5 became
+    # Supplementary Figure S6 in the 2026-07-25 migration, whose rewrite touched .md sources only.
+    # This is a Python string inside a workbook note — a surface no rewrite and, until Gate F21 was
+    # extended to panels and cells, no gate had ever opened.
+    note="This node is distinct from the Zheng-replication SBP→CKD / BMI→CKD comparison shown for the ancestry-divergence analysis (Supplementary Figure S6a), which uses a separate CKD analysis.")
 
 # ---------- S14: sample-overlap structure ----------
 S14_COLS = [("item","GWAS / design","str"),("role","Role","str"),("anc","Ancestry","str"),
@@ -582,8 +618,9 @@ write_sheet(wb, "S16_CAC_node",
 # ---------- S17: non-ischaemic HF subtypes ----------
 write_sheet(wb, "S17_HF_subtypes",
     "Table S17 | All-aetiology heart-failure subtypes (Enzan 2025, PMID 41184235; HFpEF GCST90654629, HFrEF "
-    "GCST90654628). These replace an earlier non-ischaemic panel, which was circular by construction: coronary "
-    "disease is null against non-ischaemic HF by case definition. With ischaemic cases retained, CAD reaches both subtypes "
+    "GCST90654628). All-aetiology subtype outcomes are used because definitions excluding ischaemic "
+    "cases condition directly on CAD, which would make coronary disease null against non-ischaemic HF "
+    "by case definition. With ischaemic cases retained, CAD reaches both subtypes "
     "(HFpEF P = 6e-13; HFrEF P = 6e-42), adiposity reaches both, and T2D reaches HFrEF but not HFpEF (P = 0.55). "
     "Between-subtype differences are TESTED, not inferred from significance patterns: CAD differs strongly (HFrEF > HFpEF, "
     "P = 2.2e-09, surviving Bonferroni over 8 exposures), T2D only nominally (P = 7.5e-03), and BMI shows no detected "
@@ -665,19 +702,20 @@ SBP_STRICT_COLS = [
 ]
 write_sheet(wb, "S21_SBP_strict_primary",
     "Table S21 | Disease- and trait-to-SBP edges re-estimated on strict allele-compatible instruments, "
-    "which are now the PRIMARY analysis. The SBP outcome statistics are keyed by position with no rsID, "
+    "which are the primary analysis. The SBP outcome statistics are keyed by position with no rsID, "
     "so extraction matched on position alone and allele compatibility was enforced only at "
     "harmonisation; harmonisation cannot repair a row selected wrongly at extraction. The strict set "
     "keeps only allele-matched and strand-flip variants, dropping every strand-ambiguous one. Point "
-    "estimates move — CAD→SBP goes +1.82 to +1.48 — and exactly one edge changes significance status: "
-    "HDL→SBP falls below the network Bonferroni threshold, taking the network from 59 to 58 "
-    "Bonferroni-significant edges and the Steiger-directed graph from 54 to 53. HDL→SBP is intra-stage, "
+    "estimates differ between the two extractions — CAD→SBP is +1.48 on the strict set against +1.82 on "
+    "the position-only set — and exactly one edge differs in significance status: HDL→SBP sits below the "
+    "network Bonferroni threshold on the strict set, giving 58 Bonferroni-significant edges and a "
+    "53-edge Steiger-directed graph. HDL→SBP is intra-stage, "
     "so cross-stage concordance is unchanged at 0.926 (25/27).",
     SBP_STRICT_COLS, read_csv("sbp_strict_mr.csv"),
-    note="The position-only columns are retained for transparency; they are the set the primary analysis replaces, not an alternative "
-         "analysis. At the genome-wide-strict bar CAD→SBP no longer clears 5e-8 (P = 1.11e-07), so that "
-         "robustness variant now reads 1.000 (19/19) — higher than the primary only because the "
-         "discordant edge fell below a threshold.")
+    note="Position-only estimates are retained as a transparency sensitivity comparator, not as an alternative "
+         "primary analysis. At the genome-wide-strict bar CAD→SBP does not clear 5e-8 (P = 1.11e-07), so that "
+         "robustness variant reads 1.000 (19/19) — higher than the primary only because the "
+         "discordant edge falls below a threshold.")
 
 # ---------- S22: degree-preserving null mixing diagnostics (round-3 blocker 3) ----------
 MIXING_COLS = [
@@ -689,9 +727,8 @@ MIXING_COLS = [
 ]
 write_sheet(wb, "S22_degree_null_mixing",
     "Table S22 | Mixing diagnostics for the degree-preserving rewiring null, the analysis that bounds "
-    "the staging conclusion. The earlier implementation attempted three times the edge count in "
-    "double-edge swaps per replicate, skipped invalid proposals without retrying, and reported no "
-    "realised-swap or turnover statistic. Chain length here is measured in SUCCESSFUL swaps per edge, "
+    "the staging conclusion. Chain length is measured in SUCCESSFUL double-edge swaps per edge — "
+    "invalid proposals are retried rather than skipped, so the realised chain is the reported one — "
     "and the null P is reported at 10×, 25×, 50× and 100× across three independent seeds, alongside "
     "acceptance rate and edge turnover, so that the conclusion rests on a measured chain.",
     MIXING_COLS, read_csv("degree_null_mixing.csv"),

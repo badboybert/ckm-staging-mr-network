@@ -32,6 +32,8 @@ SHARED_LIB = _os.environ.get("CKM_SHARED_LIB") or _os.path.join(CKM_ROOT, "_shar
 # ------------------------------------------------------------------------------------------------
 
 from docx.shared import Pt
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 
 SEP = set("-: ")
 
@@ -46,8 +48,29 @@ def split_row(line):
     return [c.strip() for c in line.strip().strip("|").split("|")]
 
 
+def _no_split(row):
+    """Word: <w:cantSplit/> — do not break this row across a page boundary."""
+    pr = row._tr.get_or_add_trPr()
+    if pr.find(qn("w:cantSplit")) is None:
+        pr.append(OxmlElement("w:cantSplit"))
+
+
+def _repeat_header(row):
+    """Word: <w:tblHeader/> — repeat this row at the top of every page the table spans."""
+    pr = row._tr.get_or_add_trPr()
+    if pr.find(qn("w:tblHeader")) is None:
+        pr.append(OxmlElement("w:tblHeader"))
+
+
 def render_md_table(doc, rows, add_inline, font_pt=8, bold_header=True):
-    """Render consecutive markdown pipe rows as a real Word table. Drops the |---|---| separator."""
+    """Render consecutive markdown pipe rows as a real Word table. Drops the |---|---| separator.
+
+    Round 5 (M6): every row is marked cantSplit and the header row tblHeader. The Additional-files
+    table was breaking mid-row across manuscript pages 44-45, leaving the orphan fragments
+    "SupplFig7)." and "study." stranded at the top of the next page — in the manuscript AND in the
+    standalone Declarations, because both render through this one function. Setting it here means
+    neither builder can regress, and any future table inherits the same behaviour.
+    """
     cells = [split_row(r) for r in rows]
     cells = [c for c in cells if not all(set(x) <= SEP for x in c)]
     if not cells:
@@ -55,6 +78,10 @@ def render_md_table(doc, rows, add_inline, font_pt=8, bold_header=True):
     ncol = len(cells[0])
     t = doc.add_table(rows=len(cells), cols=ncol)
     t.style = "Table Grid"
+    for ri, row in enumerate(t.rows):
+        _no_split(row)
+        if ri == 0 and bold_header:
+            _repeat_header(row)
     for ri, row in enumerate(cells):
         for ci, val in enumerate(row):
             if ci >= ncol:

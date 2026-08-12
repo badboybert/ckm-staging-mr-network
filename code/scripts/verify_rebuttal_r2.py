@@ -140,11 +140,16 @@ for pat, name, where in [
     (r"Node-level", "node-level row on the portability panel", "PDF:Figure4"),
     (r"primary", "the (primary)/(secondary) hierarchy on the portability panel", "PDF:Figure4"),
     (r"Barton", "ApoB attributed to Barton", "STROBE"),
-    # Tolerate an intervening adverb: the 2026-07-25 fluency pass split the sentence and inserted
-    # "therefore", which broke a literal match while the CLAIM was unchanged. Match the scoping
-    # (outcome-side) and the assertion, not the exact word order between them.
-    (r"outcome-side overlap\s+(?:\w+\s+){0,2}does not manufacture",
-     "overlap claim scoped to the outcome side", None),
+    # The R2 letter's claim is that the overlap statement is SCOPED TO THE OUTCOME SIDE. This check
+    # used to enforce the specific wording "outcome-side overlap ... does not manufacture", which
+    # round 5 asked us to retire as categorical — so the gate went red on a deliberate improvement
+    # and, taken at face value, would have argued for reverting the artifact. The check was stale in
+    # INTENT, not merely in scope. It now asserts the claim the letter actually makes: the statement
+    # is outcome-side-scoped AND names exposure-side overlap as the residual limitation.
+    (r"no evidence that outcome-side overlap explains the ordering; exposure-side\s+overlap remains "
+     r"a limitation",
+     "overlap claim scoped to the outcome side, with exposure-side named as the residual limit",
+     None),
 ]:
     present(pat, f"present: {name}", where)
 

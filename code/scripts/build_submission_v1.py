@@ -131,6 +131,23 @@ require(not _fig_stale,
         "STALE FIGURE(S) — a render is older than data it reads; re-run the figure script(s):\n    "
         + "\n    ".join(_fig_stale))
 
+# ---- 1c. NO TWO RENDERERS MAY CLAIM THE SAME OUTPUT ---------------------------------------------
+# Round 5. The retirement test above is "the file it writes is not on disk" — which silently stopped
+# working when fig5.R took over the name SupplFig6 from suppfig6.R. Both scripts then claimed one
+# output, the retired one looked live, and running it would have overwritten the shipped figure with
+# retired content while every gate stayed green. Whichever ran last would have won. Deriving the
+# output name from save_fig() was the right idea and was still not sufficient: the collision is the
+# defect, so assert it directly.
+_claims = {}
+for _rs in sorted(glob.glob(os.path.join(FIG, "fig*.R")) + glob.glob(os.path.join(FIG, "suppfig*.R"))):
+    if os.path.basename(_rs).startswith("_"):
+        continue
+    for _n in re.findall(r'save_fig\([^,]+,\s*"([^"]+)"', rd(_rs)):
+        _claims.setdefault(_n, []).append(os.path.basename(_rs))
+_dupes = {k: v for k, v in _claims.items() if len(v) > 1}
+require(not _dupes,
+        f"TWO RENDERERS CLAIM THE SAME OUTPUT — the last one run would silently win: {_dupes}")
+
 # ============================ 2. shipping-clean markdown ====================
 def clean_md(t):
     """Strip internal provenance so it cannot reach a reviewer: HTML comments and whole-line
@@ -333,6 +350,20 @@ for src, out, title in [("COVER_LETTER.md", "COVER_LETTER", "CKM Paper 4 cover l
     open(os.path.join(cd, out + ".md"), "w", encoding="utf-8").write(clean_md(txt))
 
 title_md = front_filled.split("# Declarations")[0]
+# Round 5 (M7). The journal-facing title page carries the title, running head, authors,
+# affiliations, corresponding author and keywords — nothing else. It was also shipping a
+# "Manuscript metrics" block with internal word counts, a "287 words (short variant)" that names an
+# abstract the package does NOT ship, and a pointer to an editable source file ("see ABSTRACT.md").
+# The AUTO:METRICS machinery stays: it is how those counts remain derived rather than typed, and the
+# README (an internal file by Gate A's audience split) already reproduces the whole table from the
+# same source. Only the journal-facing surface loses it.
+_m_metrics = re.search(r"\n##\s*Manuscript metrics.*?(?=\n##\s|\Z)", title_md, flags=re.S)
+require(bool(_m_metrics), "FRONT_MATTER.md has no '## Manuscript metrics' section to strip from the "
+                          "title page — the heading was renamed and this removal has silently stopped")
+if _m_metrics:
+    title_md = title_md[:_m_metrics.start()] + title_md[_m_metrics.end():]
+require("see ABSTRACT.md" not in title_md and "short variant" not in title_md,
+        "the title page still points at an editable source file or names an unshipped abstract variant")
 decl_md = "# Declarations" + front_filled.split("# Declarations")[1] if "# Declarations" in front_filled else ""
 d = new_doc(); render_md(d, title_md); finalize(d, os.path.join(cd, "TITLE_PAGE.docx"), "CKM Paper 4 title page")
 d = new_doc(); render_md(d, decl_md); finalize(d, os.path.join(cd, "DECLARATIONS.docx"), "CKM Paper 4 declarations")
@@ -507,6 +538,23 @@ lines += ["",
           "per-trait GWAS extracts; the code repository named in the Declarations reproduces them.", ""]
 open(os.path.join(sd, "SOURCE_DATA_MANIFEST.md"), "w", encoding="utf-8").write("\n".join(lines))
 
+# ---- Additional file 4: ONE physical upload ------------------------------------------------------
+# Round 5 (M5). The journal requires each Additional file to be a single, sequentially named upload.
+# The inventory declared "Additional file 4 | PDF" for seven SupplFig PDFs and "Additional file 5 |
+# CSV" for forty-seven CSVs — many files described as one. The PDFs are no longer a separate
+# additional file at all, because Additional file 2 already EMBEDS every supplementary figure; the
+# source data is bundled here into the one ZIP the inventory now declares. The loose CSVs stay in
+# 05_source_data/ for the deposit and for anyone reading the package directly.
+import zipfile
+_afz = os.path.join(PKG, "04_supplementary", "Source_Data.zip")
+with zipfile.ZipFile(_afz, "w", zipfile.ZIP_DEFLATED) as _z:
+    for _f in sorted(os.listdir(sd)):
+        _z.write(os.path.join(sd, _f), _f)
+_n_zip = len(zipfile.ZipFile(_afz).namelist())
+require(_n_zip == len(os.listdir(sd)),
+        f"Source_Data.zip holds {_n_zip} entries but 05_source_data has {len(os.listdir(sd))}")
+require(_n_zip > 40, f"Source_Data.zip holds only {_n_zip} entries — the source-data set is missing")
+
 # ============================ 9. _author_todo ===============================
 over_full = F["abstract_full_words"] > 350
 over_cap = F["abstract_cap_words"] > 250
@@ -576,6 +624,25 @@ _nums = sorted({int(re.match(r"^(\d+)", f).group(1))
                 for f in os.listdir(os.path.join(BASE, "scripts")) if re.match(r"^\d", f)})
 script_lo, script_hi = "%02d" % _nums[0], "%02d" % _nums[-1]
 
+_fig_rows = []
+for _rs in sorted(glob.glob(os.path.join(FIG, "fig*.R")) + glob.glob(os.path.join(FIG, "suppfig*.R"))
+                  + glob.glob(os.path.join(FIG, "graphical_abstract.R"))):
+    if os.path.basename(_rs).startswith("_"):
+        continue                                   # retired, kept for provenance only
+    _nm = re.findall(r'save_fig\([^,]+,\s*"([^"]+)"', rd(_rs))
+    if _nm:
+        _fig_rows.append(f"| `figures/{os.path.basename(_rs)}` | "
+                         + ", ".join(_nm) + " |")
+# graphical_abstract.R writes through ragg/cairo directly rather than save_fig, so the parse above
+# cannot see it. Named explicitly instead of loosening the regex, which would start matching prose.
+_fig_rows.append("| `figures/graphical_abstract.R` | GraphicalAbstract |")
+require(len(_fig_rows) == F["main_figures"] + F["supp_figures"] + 1,
+        f"the README figure mapping resolved {len(_fig_rows)} renderers for "
+        f"{F['main_figures']} main + {F['supp_figures']} supplementary + 1 graphical abstract — "
+        f"a renderer is missing, retired or double-claimed")
+fig_map = "| Script | Renders |\n|---|---|\n" + "\n".join(_fig_rows)
+abs_w = F["abstract_full_words"]
+
 readme = f"""# Submission package {PKG_VERSION} — CKM Paper 4
 
 **Title:** {TITLE}
@@ -636,9 +703,12 @@ references with no uncited or unmatched entries, the STROBE-MR checklist, the co
 per-figure source data. The gates below check provenance, cross-file identity, counts against source
 and claims against the current analysis; they are not a substitute for scientific review.
 
-Outstanding work is author-supplied only and listed in `_author_todo/AUTHOR_TODO.md`: co-authors and
-ORCIDs, funding, competing interests, the code repository DOI, the journal choice and its citation
-style, and a short abstract trim.
+The journal is chosen (Cardiovascular Diabetology), references are built in numbered Vancouver
+order by first appearance, and the abstract is complete at {abs_w} words against the 350-word limit.
+Outstanding work is author-supplied only, and `_author_todo/AUTHOR_TODO.md` is the authoritative
+list: co-authors, affiliations, ORCIDs and CRediT roles, funding, competing interests, the code
+repository URL and archived DOI, the data-access wording for the East Asian cohorts, and the
+cover-letter date.
 
 ## How this package is verified
 `scripts/gate_package.py` runs four gate families over **every file in this package**, not a subset:
@@ -660,9 +730,13 @@ From `paper 4/independent_build/`, in order:
 `build_abbreviations.py` → `build_research_insights.py` → `derive_facts.py` →
 `build_numbered_refs.py` → `qa_manuscript.py` → `build_manuscript_docx.py` →
 `build_supp_tables.py` → `build_submission_v1.py` → `gate_package.py`.
-Figures are rendered by `figures/fig1.R`–`fig6.R`, `figures/suppfig1.R`–`suppfig5.R` and
-`figures/graphical_abstract.R`; the R environment is recorded in `renv.lock`
-(`Rscript scripts/build_renv_lock.R`).
+Figures are rendered by the scripts below — the mapping is derived from each script's own
+`save_fig()` call, because after Figures 5 and 6 became Supplementary S6 and S7 the file names no
+longer match the display-item numbers:
+
+{fig_map}
+
+The R environment is recorded in `renv.lock` (`Rscript scripts/build_renv_lock.R`).
 Analysis code that produced `results/` is in `independent_build/scripts/` (numbered {script_lo}–{script_hi},
 plus the build, gate and figure scripts); the deposit named in the Declarations is the whole directory.
 """

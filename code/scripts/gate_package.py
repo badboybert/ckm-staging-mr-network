@@ -314,20 +314,26 @@ EXPECT = {
 def num(s):
     return int(str(s).replace(",", ""))
 
-tp_txt = rd(os.path.join(PKG, "02_cover_declarations", "TITLE_PAGE.md"))
+# Round 5 (M7) moved the derived metrics OFF the journal-facing title page — a reviewer should not
+# be shown internal word counts, an unshipped "short variant" or a pointer to an editable source
+# file. The numbers must still be derived and still be checked, so this block now reads the README,
+# which is internal by Gate A's audience split and already carried the same table. The gate was not
+# stale in INTENT, only in SCOPE: it was asserting the right facts against the wrong surface. The
+# title page is separately asserted to be free of them, below.
+tp_txt = rd(os.path.join(PKG, "README_SUBMISSION.md"))
 checks = [
-    (r"Abstract:\s*([\d,]+) words \(shipped[^)]*\)\s*/\s*([\d,]+) words",
+    (r"\| Abstract \| ([\d,]+) words full / ([\d,]+) words cap variant \|",
      ("abstract full", "abstract cap")),
-    (r"Introduction:\s*([\d,]+) words", ("introduction",)),
-    (r"Methods:\s*([\d,]+) words", ("methods",)),
-    (r"Results:\s*([\d,]+) words", ("results",)),
-    (r"Discussion:\s*([\d,]+) words", ("discussion",)),
-    (r"Conclusions:\s*([\d,]+) words", ("conclusions",)),
-    (r"Main text total:\s*([\d,]+) words", ("main text",)),
-    (r"Main display items:\s*(\d+) figures \((\d+) panels\)", ("main figures", "panels")),
-    (r"Supplementary:\s*(\d+) tables .*?in (\d+) worksheets;\s*(\d+) supplementary figures",
-     ("supp tables", "worksheets", "supp figures")),
-    (r"References:\s*(\d+)", ("references",)),
+    (r"\| Introduction \| ([\d,]+) words \|", ("introduction",)),
+    (r"\| Methods \| ([\d,]+) words \|", ("methods",)),
+    (r"\| Results \| ([\d,]+) words \|", ("results",)),
+    (r"\| Discussion \| ([\d,]+) words \|", ("discussion",)),
+    (r"\| Conclusions \| ([\d,]+) words \|", ("conclusions",)),
+    (r"\| Main text total \| ([\d,]+) words \|", ("main text",)),
+    (r"\| Main figures \| (\d+) figures, (\d+) panels \|", ("main figures", "panels")),
+    (r"\| Supplementary tables \| S1–S(\d+) in (\d+) worksheets \|", ("supp tables", "worksheets")),
+    (r"\| Supplementary figures \| (\d+) \|", ("supp figures",)),
+    (r"\| References \| (\d+) cited", ("references",)),
 ]
 for pat, keys in checks:
     m = re.search(pat, tp_txt)
@@ -1113,13 +1119,58 @@ if _PC is not None:
 #      truth instead: every main-figure number a reader-facing surface cites must exist.
 _n_main = F["main_figures"]
 for k, t in _READER.items():
-    if k.endswith(".pdf"):
-        continue
-    for _m in re.finditer(r"\bFigures?\s+((?:\d+[a-h]?(?:\s*[,–-]\s*[a-h])?(?:\s*(?:,|and)\s*)?)+)", t):
-        for _n in re.findall(r"\b(\d+)", _m.group(1)):
+    # PANELS ARE IN SCOPE. This rule previously skipped .pdf, and that is exactly how Supplementary
+    # Figure S2 shipped an on-panel "(attenuates in MVMR, Fig 6)" through five rounds: the migration
+    # that renamed main Figure 6 rewrote .md sources only, and the gate that catches dangling
+    # main-figure callouts declined to read the one surface the stale reference was on.
+    for _m in re.finditer(r"\bFigs?\.?\s+((?:\d+[a-h]?(?:\s*[,–-]\s*[a-h])?(?:\s*(?:,|and)\s*)?)+)"
+                          r"|\bFigures?\s+((?:\d+[a-h]?(?:\s*[,–-]\s*[a-h])?(?:\s*(?:,|and)\s*)?)+)", t):
+        for _n in re.findall(r"\b(\d+)", _m.group(1) or _m.group(2) or ""):
             if int(_n) > _n_main:
                 fail(f"GATE F [dangling figure callout] {k} cites main Figure {_n}, but the package "
                      f"ships {_n_main} main figures: '{' '.join(_m.group(0).split())[:60]}'")
+
+# F23. The journal-facing TITLE PAGE carries no internal production metrics and no pointer to an
+#      editable source file. It was shipping a word-count inventory, a "287 words (short variant)"
+#      naming an abstract the package does not ship, and "see ABSTRACT.md".
+_tp = _TXT.get("02_cover_declarations/TITLE_PAGE.md", "")
+if not _tp:
+    fail("GATE F [scope] TITLE_PAGE.md was not read; the title-page rule cannot run")
+for _bad in ("Manuscript metrics", "short variant", "ABSTRACT.md", "Main text total",
+             "Main display items"):
+    if _bad in _tp:
+        fail(f"GATE F [title page] carries internal production detail: '{_bad}'")
+
+# F24. Each declared Additional file must be ONE physical upload, sequentially named. The inventory
+#      declared "Additional file 4 | PDF" for seven SupplFig PDFs and "Additional file 5 | CSV" for
+#      forty-seven CSVs — many files described as one, which the journal's instructions do not allow.
+_decl = _TXT.get("02_cover_declarations/DECLARATIONS.md", "")
+_af = re.findall(r"\| (Additional file (\d+)) \| (\w+) \|([^|]*)\|", _decl)
+if len(_af) < 3:
+    fail(f"GATE F [scope] only {len(_af)} Additional-file rows parsed from DECLARATIONS.md")
+else:
+    _nums = [int(n) for _, n, _f, _d in _af]
+    if _nums != list(range(1, len(_nums) + 1)):
+        fail(f"GATE F [additional files] not numbered sequentially from 1: {_nums}")
+    _EXPECT = {1: "02_cover_declarations/STROBE_MR_CHECKLIST.docx",
+               2: "04_supplementary/SUPPLEMENTARY_INFORMATION.docx",
+               3: "04_supplementary/Supplementary_Tables.xlsx",
+               4: "04_supplementary/Source_Data.zip"}
+    for _, _n, _fmt, _ in _af:
+        _want = _EXPECT.get(int(_n))
+        if _want is None:
+            fail(f"GATE F [additional files] Additional file {_n} is declared but has no known "
+                 f"physical upload")
+        elif not os.path.exists(os.path.join(PKG, _want.replace("/", os.sep))):
+            fail(f"GATE F [additional files] Additional file {_n} is declared but {_want} is not "
+                 f"in the package")
+        elif _want.rsplit(".", 1)[1].upper() != _fmt.upper():
+            fail(f"GATE F [additional files] Additional file {_n} is declared {_fmt} but the "
+                 f"physical upload is {_want.rsplit('.', 1)[1].upper()}")
+    _cited = {int(x) for t in _READER.values() for x in re.findall(r"Additional files? (\d+)", t)}
+    if _cited - set(_nums):
+        fail(f"GATE F [additional files] the text cites Additional file(s) {sorted(_cited - set(_nums))} "
+             f"which the inventory does not declare")
 
 # F22. THE GRAPHICAL ABSTRACT MUST AGREE WITH THE MANUSCRIPT. It printed the BMI→HF direct effect as
 #      +0.41 while the Abstract, Results, Discussion and Figure 2 all printed +0.42, through every

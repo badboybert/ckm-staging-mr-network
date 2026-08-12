@@ -93,11 +93,15 @@ pd <- ggplot(ke, aes(b, model, colour=surv)) +
   geom_point(size=2.6) +
   geom_text(aes(label=ifelse(p<0.01, sprintf("P=%.1e", p), sprintf("P=%.2f", p))),
             vjust=-1.1, size=FS/.pt-1.2, colour="black") +
-  # 2026-07-26 (round-4 Tier 1): both the axis title and the legend were CLIPPED at the right edge
-  # of this panel ("...T2D→BMI effec", "...surviv"). Shortened rather than widened: the composite
-  # width is fixed by the journal column, so length is the only lever.
+  # 2026-07-26 (round-4 Tier 1) shortened the axis title and the legend labels because "the
+  # composite width is fixed by the journal column, so length is the only lever". It was not enough:
+  # round 5 (M3) found the legend STILL clipped, with the PDF text layer literally ending at
+  # "Bonferroni su". Shortening is a fragile lever — it depends on a string length nobody re-measures
+  # — so the two keys are STACKED instead. The legend box then needs the width of one label rather
+  # than two, which removes the dependence on label length altogether.
   scale_colour_manual(values=c("survives"=POS_COL,"fails"=NULL_COL),
                       labels=c("Bonferroni fails","Bonferroni survives"), name=NULL) +
+  guides(colour=guide_legend(nrow=2, byrow=TRUE)) +
   labs(x="Meta-analysed T2D→BMI", y=NULL,
        title="T2D→BMI meta: Hartung–Knapp CI spans zero (I²=0.76)") +
   coord_cartesian(xlim=c(-0.42,0.28)) + theme_ckm(legend="bottom")
