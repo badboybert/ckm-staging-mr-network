@@ -202,14 +202,27 @@ check("§2 the shipped Results no longer state +1.82",
 
 # ---- 5. the ledger the letter claims (§2) -------------------------------------------------------
 _led = list(csv.DictReader(open(os.path.join(RES, "staging_ledger_native.csv"), encoding="utf-8")))
+# Round 7 (C049): the SHIPPED vocabulary is REVERSE_SUPPORTED / REVERSE_CAVEATED (build_supp_tables
+# .VERDICT_RENAME). The analysis CSV keeps the original DISCORDANT tokens, because main Figure 1 maps
+# them to colours and legend labels, so the CSV is counted THROUGH the same rename table and the
+# assertion below is made on the shipped vocabulary. Anything outside the documented four labels — in
+# the CSV or in the workbook — is a failure.
+_VERDICT_RENAME = {"DISCORDANT": "REVERSE_SUPPORTED", "DISCORDANT_CAVEATED": "REVERSE_CAVEATED",
+                   "DISC_CAVEATED": "REVERSE_CAVEATED"}
+_DOCUMENTED = {"CONCORDANT", "INDETERMINATE", "REVERSE_SUPPORTED", "REVERSE_CAVEATED"}
 _v = {}
 for r in _led:
-    _v[r["verdict"]] = _v.get(r["verdict"], 0) + 1
+    _k = _VERDICT_RENAME.get(r["verdict"], r["verdict"])
+    _v[_k] = _v.get(_k, 0) + 1
+check("§2 the ledger uses only the documented verdict vocabulary",
+      set(_v) <= _DOCUMENTED, f"{sorted(_v)}")
 _m = re.search(r"\*\*(\d+) concordant / (\d+) indeterminate / (\d+) reverse-supported /\s*\n?(\d+) pleiotropy-caveated\*\*", LET)
 check("§2 the ledger counts in the letter match staging_ledger_native.csv",
       _m and [int(x) for x in _m.groups()] == [_v.get("CONCORDANT", 0), _v.get("INDETERMINATE", 0),
-                                               _v.get("DISCORDANT", 0), _v.get("DISCORDANT_CAVEATED", 0)],
+                                               _v.get("REVERSE_SUPPORTED", 0), _v.get("REVERSE_CAVEATED", 0)],
       f"letter={_m and _m.groups()} file={_v}")
+check("§2 the retired DISCORDANT vocabulary is absent from the shipped workbook",
+      "DISCORDANT" not in SURF["04_supplementary/Supplementary_Tables.xlsx"])
 
 # ---- 6. the round-5 reference repairs the letter claims (§4.2) ----------------------------------
 _refs = SURF["01_manuscript/REFERENCES_NUMBERED.md"]
@@ -261,7 +274,11 @@ check("§4 the S6 legend is under the 300-word limit the letter claims",
 _summ = io.open(os.path.join(RES, "sensitivity_noukb_summary.txt"), encoding="utf-8").read()
 _n13 = int(re.search(r"-\s*(\d+) headline FORWARD edges retain", _summ).group(1))
 check("§4.3 the shipped Results keep the DERIVED headline-forward count",
-      f"All {_n13} significant forward edges" in SURF["01_manuscript/RESULTS.md"], _n13)
+      f"All {_n13} headline forward edges" in SURF["01_manuscript/RESULTS.md"], _n13)
+# Round 8: the prose said "significant forward edges", which reads as contradicting the Discussion's
+# 25/22/18 and was challenged on exactly that basis. sensitivity_noukb_summary.txt calls the set
+# "headline FORWARD edges"; the prose now uses the generator's own word, so the check pins the
+# generator's vocabulary rather than a looser synonym. The NUMBER is unchanged and still derived.
 check("§4.3 the letter records that this was NOT a defect",
       "Both numbers are correct" in LET)
 
@@ -299,10 +316,12 @@ for name, script in (("verify_rebuttal_r2.py", "verify_rebuttal_r2.py"),
           f"letter={lm and lm.groups()} actual={m and m.groups()}")
 
 # ---- 11. §8 — the open-items claim must be true of the package ----------------------------------
+# R6 (2026-08-20): the bracketed placeholders were replaced by a truthful interim statement, so none
+# should survive in the journal-facing declarations; the repository identifiers are finalised at proof.
 _ph = re.findall(r"\[(?:AUTHOR-SUPPLIED|GitHub URL|Date)[^\]]*\]",
                  "\n".join(v for k, v in SURF.items() if k.startswith("02_cover_declarations/")))
-check("§8 author-supplied placeholders do still exist, as the letter says", len(_ph) > 0,
-      f"{len(_ph)} found")
+check("§8 no bracketed author-supplied placeholder survives (R6 interim statement)", len(_ph) == 0,
+      f"{len(_ph)} found: {_ph[:3]}")
 check("§8 the letter does not claim the repository DOI is already deposited",
       not re.search(r"deposited at Zenodo|DOI 10\.\d{4,}", LET))
 

@@ -33,6 +33,11 @@ EXP_UNITS = {
  "eGFR":("per-SD (log)","per-SD"), "CAD":("per-log-OR","per-log-OR"), "HF":("per-log-OR","per-log-OR"),
 }
 BIN = {"CAD","HF","Stroke","T2D","CKD"}
+# Traits whose two ancestry-side scales are NOT interconvertible, so magnitudes cannot be compared
+# on either side of an edge. This is the same list the scale dictionary (Supplementary Table S15)
+# publishes as "No - sign only"; it was previously applied to the EXPOSURE only, which flagged 16
+# edges whose OUTCOME is HbA1c or eGFR as comparable while S15 and the Methods said the opposite.
+NONCOMPARABLE = {"HbA1c", "eGFR"}
 
 def out_units(o): return "log-OR" if o in BIN else "per-SD"
 
@@ -69,8 +74,11 @@ def main():
             eu_units = EXP_UNITS.get(a,("per-SD","per-SD"))
             exp_u_eur, exp_u_eas = eu_units
             out_u = out_units(b)
-            # comparability: True unless exposure units differ across ancestry (only SBP)
-            comparable = (exp_u_eur == exp_u_eas)
+            # comparability: BOTH sides must be on a common scale in the two ancestries. The
+            # exposure side fails when its units differ across ancestry (only SBP, and that one is
+            # repaired by the rescale below); either side fails outright for a NONCOMPARABLE trait.
+            comparable = (exp_u_eur == exp_u_eas
+                          and a not in NONCOMPARABLE and b not in NONCOMPARABLE)
             eur_b = float(r["EUR_b"]); eas_b = float(r["EAS_b"])
             if (a, b) in EUR_FULL:
                 assert abs(EUR_FULL[(a, b)] - eur_b) < 5e-3, \
@@ -85,12 +93,18 @@ def main():
                 # put EUR SBP on per-SD to match EAS: multiply per-mmHg beta by SD_SBP
                 eur_b_std = eur_b * SD_SBP
                 note = f"EUR rescaled per-mmHg->per-SD (x{SD_SBP})"
-                comparable = True
+                # The rescale repairs the EXPOSURE side only; an SBP->HbA1c or SBP->eGFR edge is
+                # still not magnitude-comparable, because the outcome scales differ.
+                comparable = b not in NONCOMPARABLE
             rows.append(dict(edge=r["edge"], exposure=a, outcome=b,
                 exp_units_eur=exp_u_eur, exp_units_eas=exp_u_eas, out_units=out_u,
                 EUR_b=eur_b, EAS_b=eas_b, EUR_b_perSD=round(eur_b_std,4), EAS_b_perSD=round(eas_b_std,4),
                 EUR_p=r["EUR_p"], EAS_p=r["EAS_p"], dir_concordant=r["dir_concordant"],
                 both_sig=r["both_sig"], comparable=comparable, scale_note=note))
+    bad = [r["edge"] for r in rows if r["comparable"]
+           and (r["exposure"] in NONCOMPARABLE or r["outcome"] in NONCOMPARABLE)]
+    assert not bad, ("comparable=True survives on %d edges carrying a sign-only trait: %s"
+                     % (len(bad), bad[:8]))
     out=os.path.join(BASE,"results/edges_standardised.csv")
     with io.open(out,"w",encoding="utf-8",newline="") as fh:
         w=csv.DictWriter(fh, fieldnames=list(rows[0].keys())); w.writeheader()

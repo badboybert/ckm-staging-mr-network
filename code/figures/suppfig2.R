@@ -76,5 +76,5 @@ sf2 <- ggplot(d, aes(b, ypos, colour=role)) +
   theme_ckm(legend="top") +
   theme(legend.position="top", plot.margin=margin(11,8,4,4))
 
-save_fig(sf2, "SupplFig2", 178, 108)
+save_fig(sf2, "SupplFig2", 170, 103)
 cat("SF2 done:", nrow(d), "edges (", sum(d$p<BONF), "Bonferroni-sig )\n")

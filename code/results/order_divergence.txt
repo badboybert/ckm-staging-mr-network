@@ -2,12 +2,12 @@
 shared nodes: ['BMI', 'SBP', 'LDL', 'HDL', 'TC', 'TG', 'HbA1c', 'T2D', 'eGFR', 'CAD', 'HF', 'Stroke']
 
 [1] NODE-ORDER Kendall-tau_a on raw netflow scores (ties excluded; higher score=upstream):
-  main            tau_a=+0.492  divergence(1-tau)=0.508  perm_p=0.0455  (concordant_pairs=44, discordant=15)
-     EUR netflow: BMI:+6, SBP:+5, HbA1c:+5, LDL:+3, HDL:+2, TC:+1, TG:+1, eGFR:-1, T2D:-2, CAD:-4, HF:-7, Stroke:-9
+  main            tau_a=+0.263  divergence(1-tau)=0.737  perm_p=0.3251  (concordant_pairs=36, discordant=21)
+     EUR netflow: BMI:+7, LDL:+4, HDL:+3, TG:+3, TC:+2, HbA1c:+2, SBP:-1, eGFR:-1, T2D:-2, CAD:-2, Stroke:-7, HF:-8
      EAS netflow: SBP:+6, HbA1c:+3, T2D:+3, LDL:+1, TG:+1, HDL:+0, BMI:-1, eGFR:-1, TC:-2, Stroke:-2, CAD:-4, HF:-4
-  drop_->BMI      tau_a=+0.679  divergence(1-tau)=0.321  perm_p=0.0055  (concordant_pairs=47, discordant=9)
-  drop_SBP(sens)  tau_a=+0.464  divergence(1-tau)=0.536  perm_p=0.0731  (concordant_pairs=41, discordant=15)
-  drop_both(sens) tau_a=+0.633  divergence(1-tau)=0.367  perm_p=0.0071  (concordant_pairs=49, discordant=11)
+  drop_->BMI      tau_a=+0.444  divergence(1-tau)=0.556  perm_p=0.0963  (concordant_pairs=39, discordant=15)
+  drop_SBP(sens)  tau_a=+0.346  divergence(1-tau)=0.654  perm_p=0.2135  (concordant_pairs=35, discordant=17)
+  drop_both(sens) tau_a=+0.509  divergence(1-tau)=0.491  perm_p=0.0449  (concordant_pairs=43, discordant=14)
      PRIMARY = 'main' (no drops); 'drop_->BMI' = pre-specified BBJ-selection artifact sensitivity; 'drop_SBP' shown only for transparency (incoherent with scale-free score).
 
 [2] EDGE SIGN-concordance on well-powered shared edges (EUR-sig anchor, both nSNP>=10):
@@ -17,5 +17,5 @@ shared nodes: ['BMI', 'SBP', 'LDL', 'HDL', 'TC', 'TG', 'HbA1c', 'T2D', 'eGFR', '
   drop_both    sign-concordant 39/58 = 0.672  binom_p=0.01193  (both-sig&concordant=21)
 
 [3] Sign-DISCORDANT well-powered edges, split by EAS significance:
-    GENUINE divergences (BOTH ancestries significant, opposite sign): ['BMI->HbA1c(EUR+0.23/EAS-0.23)', 'HbA1c->HF(EUR+0.05/EAS-0.18)', 'TG->LDL(EUR+0.28/EAS-0.11)', 'HbA1c->TG(EUR+0.07/EAS-0.09)', 'T2D->HDL(EUR-0.07/EAS+0.03)']
-    DARK (EAS NS/underpowered — sign flip is noise, not divergence): ['CAD->Stroke', 'BMI->T2D', 'T2D->TG', 'HbA1c->Stroke', 'SBP->T2D', 'LDL->Stroke', 'LDL->TG', 'TC->HbA1c', 'T2D->Stroke', 'HDL->BMI', 'T2D->HF', 'TC->HF', 'LDL->HF', 'HDL->Stroke', 'TG->HbA1c', 'TG->T2D']
+    GENUINE divergences (BOTH ancestries significant, opposite sign): ['HbA1c->HF(EUR+0.05/EAS-0.18)', 'T2D->HDL(EUR-0.07/EAS+0.03)', 'TG->LDL(EUR+0.28/EAS-0.11)', 'HbA1c->TG(EUR+0.07/EAS-0.09)', 'BMI->HbA1c(EUR+0.23/EAS-0.23)']
+    DARK (EAS NS/underpowered — sign flip is noise, not divergence): ['SBP->T2D', 'T2D->TG', 'LDL->Stroke', 'HDL->Stroke', 'CAD->Stroke', 'LDL->TG', 'T2D->Stroke', 'HDL->BMI', 'TG->T2D', 'LDL->HF', 'TC->HbA1c', 'BMI->T2D', 'T2D->HF', 'TC->HF', 'TG->HbA1c', 'HbA1c->Stroke']

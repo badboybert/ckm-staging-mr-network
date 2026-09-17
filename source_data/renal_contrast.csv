@@ -1,0 +1,9 @@
+exposure,outcome,source,ancestry,cohort,outcome_definition,cases,nsnp,b_native,se_native,units_native,b_perSD,se_perSD,p,source_file
+SBP,CKD,EUR,European,CKDGen (Wuttke 2019),eGFR < 60 mL/min/1.73 m2,"41,395",437,0.014548,0.002961,per mmHg,0.280768,0.05715,8.97899711259899e-07,results/network_ckd.csv
+SBP,CKD,EAS_BBJ,East Asian,Biobank Japan (Sakaue 2021),registry chronic renal failure,"2,117",21,0.097859,0.297186,per SD,0.097859,0.297186,0.741939961373869,results/renal_eas_primary.csv
+SBP,CKD,EAS_TPMI,East Asian,"TPMI, within-cohort",PheCode 585.3,"25,906",29,0.273119,0.144029,per SD,0.273119,0.144029,0.057923315102675,results/network_tpmi_full.csv
+SBP,CKD,EAS_ZERO,East Asian,BBJ instruments -> TPMI (zero overlap),PheCode 585.3,"25,906",21,0.234035,0.078021,per SD,0.234035,0.078021,0.00270312300531457,results/network_crosscohort_bbj_tpmi.csv
+BMI,CKD,EUR,European,CKDGen (Wuttke 2019),eGFR < 60 mL/min/1.73 m2,"41,395",505,0.139929,0.033511,per SD,0.139929,0.033511,2.9710798607834e-05,results/network_ckd.csv
+BMI,CKD,EAS_BBJ,East Asian,Biobank Japan (Sakaue 2021),registry chronic renal failure,"2,117",61,0.422973,0.195328,per SD,0.422973,0.195328,0.0303531177691102,results/renal_eas_primary.csv
+BMI,CKD,EAS_TPMI,East Asian,"TPMI, within-cohort",PheCode 585.3,"25,906",35,0.569109,0.07119,per SD,0.569109,0.07119,1.30351743520952e-15,results/network_tpmi_full.csv
+BMI,CKD,EAS_ZERO,East Asian,BBJ instruments -> TPMI (zero overlap),PheCode 585.3,"25,906",59,0.298703,0.073897,per SD,0.298703,0.073897,5.29632948949773e-05,results/network_crosscohort_bbj_tpmi.csv

@@ -80,7 +80,8 @@ cfl$model <- factor(cfl$model, levels=cf$model)   # levels follow the data; a ty
 pc <- ggplot(cfl, aes(model, condF, fill=exp)) +
   geom_col(position=position_dodge(width=0.7), width=0.6) +
   geom_hline(yintercept=10, linetype="dashed", colour=POS_COL, linewidth=0.4) +
-  annotate("text", x=0.6, y=13, label="F=10 (weak-instrument)", size=FS/.pt-1.4, colour=POS_COL, hjust=0) +
+  annotate("text", x=0.55, y=64, label="F = 10 (weak-instrument threshold)", size=FS/.pt-1.4,
+           colour="grey35", hjust=0) +
   geom_text(aes(label=sprintf("%.0f", condF)), position=position_dodge(width=0.7), vjust=-0.4, size=FS/.pt-1.2) +
   scale_fill_manual(values=c(ApoB="#5D4037", LDL="#8D6E63"), name=NULL) +
   labs(x=NULL, y="Conditional F", title="ApoB & LDL collinear → not separable") +
@@ -132,43 +133,13 @@ pd <- ggplot(fd, aes(b, exp, colour=sign)) +
 # other surface. The number is dropped rather than re-derived: the panel's job is the evidence tier,
 # and the one honest summary of that quantity is that it is imprecise.
 stopifnot(is.finite(.conc), is.finite(.bmi_direct))
-tier <- data.frame(
-  y=c(6,5,4, 3,2, 1),
-  # 2026-07-26: AHA staging moved HIGHER CONF. -> SUPPORTIVE. Its own row text already said "not
-  # beyond a degree-preserving null"; the TIER LABEL beside it still said higher confidence, so the
-  # panel contradicted itself and the demoted claim in the prose. Text was fixed earlier, the label
-  # was not — verify the artifact, not the edit.
-  # 2026-07-26 (v4.2): row 3 (CAD->HF direction; atherogenic ApoB/LDL axis) moved SUPPORTIVE ->
-  # HIGHER CONF. This is a LONG-STANDING panel-vs-prose mismatch, not a new judgement: the Results
-  # synthesis paragraph has always listed the CAD->HF direction and the atherogenic axis at higher
-  # confidence, while this strip graded them supportive. CAD->HF is the most robust edge in the paper
-  # (0.285, P = 1e-119, concordant across IVW/Egger/weighted median, clean Egger intercept,
-  # Steiger-correct, CAUSE favouring the causal model), so grading it BELOW the BMI mediation result
-  # was indefensible in either direction of fix; the panel moves to the prose.
-  tier=c("HIGHER CONF.","SUPPORTIVE","HIGHER CONF.","SUPPORTIVE","SUPPORTIVE","EXPLORATORY / NULL"),
-  txt=c(sprintf("BMI: CAD-independent HF association (~%.0f%% not via CAD); T2D mediation proportion imprecise",
-                .bmi_direct),
-        sprintf("AHA staging: descriptively concordant in Europeans (%.2f, P=%.4f), not beyond a degree-preserving null",
-                .conc, .pp),
-        "CAD→HF direction; atherogenic ApoB/LDL axis carries the coronary lipid signal",
-        "EUR→EAS portability suggestive only (node-block CI includes chance)",
-        "East-Asian lean-diabetes signature (→BMI): persists in a population cohort; selection not excluded",
-        "EAS staging under-powered; eGFR/CKD→CVD null; HDL not shown protective"))
-# The one tier assignment that is a CLAIM about the evidence, not a presentation choice: staging is
-# bounded by a non-significant degree-preserving null, so it can never sit in the top tier. Asserted
-# here, at the source, and re-asserted against the rendered PDF by gate_package Gate F3.
-stopifnot(tier$tier[grep("AHA staging", tier$txt, fixed=TRUE)] != "HIGHER CONF.")
-tcol <- c("HIGHER CONF."="#2E7D32","SUPPORTIVE"="#E69F00","EXPLORATORY / NULL"=NULL_COL)
-pe <- ggplot(tier) +
-  geom_point(aes(x=0, y=y, colour=tier), size=3) +
-  geom_text(aes(x=0.15, y=y, label=txt), hjust=0, size=FS/.pt-1.1, colour="grey15") +
-  geom_text(aes(x=0, y=y, label=tier, colour=tier), hjust=1.4, size=FS/.pt-1.3, fontface=2) +
-  scale_colour_manual(values=tcol, guide="none") +
-  coord_cartesian(xlim=c(-1.4, 10.4), ylim=c(0.5,6.6), clip="off") +
-  theme_void(base_family=FONT) +
-  theme(plot.margin=margin(11,6,6,30))
+# Round-7 Q7 / C014: the graded-synthesis TEXT PANEL that used to be panel (e) has been promoted
+# to main-text Table 1 (scripts/build_tables.py), because a six-line summary of the paper's whole
+# evidence base does not belong inside a supplementary lipid figure - and the panel and the
+# Results paragraph that restated it had drifted into disagreeing about the East Asian staging
+# order. This figure is now the four lipid panels.
 
-fig6 <- (pa | pb) / (pc | pd) / pe +
-  plot_layout(heights=c(1, 1, 0.85)) +
+fig6 <- (pa | pb) / (pc | pd) +
+  plot_layout(heights=c(1, 1)) +
   plot_annotation(tag_levels="a", theme=theme(plot.tag=element_text(size=FS_TAG, face="bold")))
-save_fig(fig6, "SupplFig7", 183, 205)
+save_fig(fig6, "SupplFig7", 170, 150)

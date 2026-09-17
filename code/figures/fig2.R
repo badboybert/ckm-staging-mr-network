@@ -107,18 +107,23 @@ pb <- ggplot(m, aes(direct_b, row, colour=surv)) +
 mc <- data.frame(
   exp_f = factor(c("BMI","T2D (independence)","T2D (strong corr.)"),
                  levels=c("T2D (strong corr.)","T2D (independence)","BMI")),
-  pt    = c(.bmi$pm_product[1], .indep$pm_product_point[1], .indep$pm_product_point[1]),
+  # Round-7 C032: the legend and the Results both say no single T2D point estimate is reportable,
+  # but the panel drew one (the product-method point, twice). The two T2D rows are interval-only.
+  pt    = c(.bmi$pm_product[1], NA, NA),
   lo    = c(.bmi$pm_lo[1], .indep$pm_product_lo[1], min(.strg$pm_product_lo)),
   hi    = c(.bmi$pm_hi[1], .indep$pm_product_hi[1], max(.strg$pm_product_hi)),
   grp   = c("BMI","T2D","T2D"))
 mc$lab <- sprintf("%.0f–%.0f%%", mc$lo, mc$hi)
+# The two T2D rows carry no point estimate (C032), so the interval label is anchored at the middle of
+# the interval instead of at the (missing) point; otherwise the label disappears with the point.
+mc$labx <- ifelse(is.na(mc$pt), (mc$lo + mc$hi)/2, mc$pt)
 pc <- ggplot(mc, aes(pt, exp_f)) +
   annotate("rect", xmin=100, xmax=Inf, ymin=-Inf, ymax=Inf, fill="grey94") +
   geom_vline(xintercept=100, linetype="dashed", linewidth=0.4, colour="grey55") +
   geom_vline(xintercept=0, linewidth=0.3, colour="grey70") +
   geom_errorbar(aes(xmin=lo, xmax=hi, colour=grp), width=0, linewidth=0.6, orientation="y") +
   geom_point(aes(colour=grp), size=2.6) +
-  geom_text(aes(label=lab), vjust=-1.1, size=FS/.pt-1.3, colour="black") +
+  geom_text(aes(x=labx, label=lab), vjust=-1.1, size=FS/.pt-1.3, colour="black") +
   annotate("text", x=100, y=3.5, label=">100%: unstable estimate", size=FS/.pt-1.6, colour="grey45",
            vjust=0, hjust=0.5) +
   # moved below the BMI row: at y=3 it sat ON the BMI point and the marker overprinted the text.
@@ -142,13 +147,13 @@ rbk <- rb[(rb$model=="CAD_full" & rb$exposure=="BMI") | (rb$model=="HF_via_CAD" 
           (rb$model=="Stroke_full" & rb$exposure=="LDL"), ]
 rbk$edge <- paste0(rbk$exposure, "→", OUTMAP[rbk$model])
 rl <- reshape(rbk[,c("edge","ivw_b","egger_b","qhet_b")], direction="long",
-              varying=c("ivw_b","egger_b","qhet_b"), v.names="b", times=c("IVW","Egger","qhet"), timevar="est")
+              varying=c("ivw_b","egger_b","qhet_b"), v.names="b", times=c("IVW","Egger","Q-minimisation"), timevar="est")
 rl$edge <- factor(rl$edge, levels=rev(unique(rbk$edge)))
 pd <- ggplot(rl, aes(b, edge, shape=est, colour=est)) +
   geom_vline(xintercept=0, linewidth=0.3, colour="grey70") +
   geom_point(size=2, position=position_dodge(width=0.5)) +
-  scale_shape_manual(values=c(IVW=16, Egger=17, qhet=15), name=NULL) +
-  scale_colour_manual(values=c(IVW="#333333", Egger="#0072B2", qhet="#009E73"), name=NULL) +
+  scale_shape_manual(values=c(IVW=16, Egger=17, "Q-minimisation"=15), name=NULL) +
+  scale_colour_manual(values=c(IVW="#333333", Egger="#0072B2", "Q-minimisation"="#009E73"), name=NULL) +
   labs(x="Direct effect", y=NULL) +
   coord_cartesian(xlim=c(-0.05,0.5)) + theme_ckm(legend="bottom")
 
@@ -201,4 +206,4 @@ pf <- ggplot(sub, aes(ivw_b, exp_f, colour=outcome_f, shape=sig)) +
 fig2 <- pa / (pb | pc) / (pd | pe) / pf +
   plot_layout(heights=c(0.58, 1.12, 0.88, 0.86)) +
   plot_annotation(tag_levels="a", theme=theme(plot.tag=element_text(size=FS_TAG, face="bold")))
-save_fig(fig2, "Figure2", 183, 248)
+save_fig(fig2, "Figure2", 170, 222)

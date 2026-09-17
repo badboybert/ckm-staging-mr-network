@@ -50,7 +50,10 @@ def read(name):
     return t
 
 # --- inline **bold** / *italic* -> runs ---
-INLINE = re.compile(r"\*\*(.+?)\*\*|\*(.+?)\*")
+# ^...^ is a superscript run (the affiliation markers on the title page). The packager's renderer
+# has understood this since round 6; this one did not, so deriving the author line from
+# FRONT_MATTER.md (round-7 C002) would otherwise print literal carets in the manuscript.
+INLINE = re.compile(r"\*\*(.+?)\*\*|\*(.+?)\*|\^([^\^\n]+)\^")
 def add_inline(p, text):
     pos = 0
     for m in INLINE.finditer(text):
@@ -58,8 +61,10 @@ def add_inline(p, text):
             p.add_run(text[pos:m.start()])
         if m.group(1) is not None:
             p.add_run(m.group(1)).bold = True
-        else:
+        elif m.group(2) is not None:
             p.add_run(m.group(2)).italic = True
+        else:
+            p.add_run(m.group(3)).font.superscript = True
         pos = m.end()
     if pos < len(text):
         p.add_run(text[pos:])
@@ -120,14 +125,30 @@ h = doc.add_paragraph(); h.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = h.add_run(title); r.bold = True; r.font.size = Pt(15)
 
 doc.add_paragraph()
+# Round-7 C002: the author list, affiliations and corresponding-author block are DERIVED from
+# FRONT_MATTER.md - the same source the title page reads - because a hardcoded literal here is how
+# this file came to ship "[Author list to be supplied]" on page 1 through six review rounds while a
+# complete list sat in TITLE_PAGE.docx. gate_package asserts the two agree and that no bracketed
+# placeholder survives.
+_ma = re.search(r"##\s*Authors\s*\n(.+?)\n\s*\n", _front_src, flags=re.S)
+assert _ma, "could not read the author list from FRONT_MATTER.md"
 authors = doc.add_paragraph(); authors.alignment = WD_ALIGN_PARAGRAPH.CENTER
-authors.add_run("[Author list to be supplied]").italic = True
+add_inline(authors, " ".join(_ma.group(1).split()))
 
+_maf = re.search(r"##\s*Affiliations\s*\n(.+?)\n##", _front_src, flags=re.S)
+assert _maf, "could not read the affiliations from FRONT_MATTER.md"
+for _line in [x.strip() for x in _maf.group(1).split("\n") if x.strip()]:
+    _p = doc.add_paragraph(); _p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _r = _p.add_run(_line); _r.font.size = Pt(9)
+
+_mc = re.search(r"Corresponding author: \*\*(.+?)\*\*\n(.*?)(?:\n\s*\n|\n##)", _front_src, flags=re.S)
+assert _mc, "could not read the corresponding-author block from FRONT_MATTER.md"
+_cblock = " ".join(_mc.group(2).split())
+_mail = re.search(r"Email:\s*(\S+)", _cblock)
+assert _mail, "the corresponding-author block carries no email address"
 corr = doc.add_paragraph()
 corr.add_run("Corresponding author: ").bold = True
-corr.add_run("Bertrand Chin-Ming Tan, PhD (ORCID 0000-0002-2218-7115). "
-             "Department of Biomedical Sciences, College of Medicine, Chang Gung University, "
-             "Taoyuan City 33302, Taiwan. Email: btan@mail.cgu.edu.tw.")
+corr.add_run(f"{_mc.group(1)}. {_cblock}")
 
 # Running head and keywords are AUTHORED in FRONT_MATTER.md and read from there. They used to be
 # literals here, i.e. second copies of two facts -- and the running head duly went stale when the
@@ -140,9 +161,10 @@ def _front_field(heading):
 
 meta = doc.add_paragraph()
 meta.add_run("Running head: ").bold = True
-meta.add_run(_front_field("Running head") + "\n")
-meta.add_run("Keywords: ").bold = True
-meta.add_run(_front_field("Keywords"))
+meta.add_run(_front_field("Running head"))
+# Round-7 C109: the journal places Keywords AFTER the Abstract and before Background, so they are
+# emitted there (below), not in the title block where they used to share a paragraph with the
+# running head.
 
 # Round-4 Tier 1: the journal instructs NO manual page breaks. The section headings
 # carry the structure instead.
@@ -157,6 +179,11 @@ for para in re.findall(r"\*\*(?:Background|Methods|Results|Conclusions)\.\*\*.*?
                        block, flags=re.S):
     para = " ".join(para.split())   # unwrap
     p = doc.add_paragraph(); add_inline(p, para)
+
+# ---- Keywords: BMC places them after the Abstract, before Background (round-7 C109) ----
+_kw = doc.add_paragraph()
+_kw.add_run("Keywords: ").bold = True
+_kw.add_run(_front_field("Keywords"))
 
 # ---- Research Insights: Cardiovascular Diabetology asks for this table "below the abstract" ----
 ri = read("RESEARCH_INSIGHTS.md")
@@ -213,8 +240,20 @@ if mdec:
                 _i += 1
             lib_docx.render_md_table(doc, _blk, add_inline)
             continue
-        p = doc.add_paragraph(); add_inline(p, s)
+        # Round-7 C051: accumulate consecutive wrapped lines into ONE paragraph. DECLARATIONS.md is
+        # hard-wrapped at ~110 characters; emitting a paragraph per source line printed four pages of
+        # broken fragments in the manuscript while the standalone DECLARATIONS.docx (render_md, which
+        # unwraps) read correctly - a defect invisible to a twin-identity gate because the two
+        # representations came from different renderers.
+        _para = [s]
         _i += 1
+        while _i < _n:
+            _nxt = _dec[_i].rstrip()
+            if not _nxt or _nxt.startswith("#") or lib_docx.is_table_row(_nxt):
+                break
+            _para.append(_nxt)
+            _i += 1
+        p = doc.add_paragraph(); add_inline(p, " ".join(_para))
 
 # ================= REFERENCES (numbered Vancouver, by first appearance) =================
 doc.add_heading("References", level=1)
@@ -223,6 +262,29 @@ doc.add_heading("References", level=1)
 for cite in VAN.reference_list(MASTER, REF_ORDER):
     p = doc.add_paragraph(); p.paragraph_format.space_after = Pt(4)
     add_inline(p, cite)
+
+# ================= TABLES =================
+# Round-7 C014 / PI decision Q7: the graded evidence synthesis is a MAIN-TEXT table, generated by
+# scripts/build_tables.py from the analysis outputs. It used to be a text panel inside a
+# supplementary figure and a parallel list in the Results, which disagreed with each other.
+_tables_src = read("TABLES.md")
+doc.add_heading("Tables", level=1)
+_tb = _tables_src.split("\n")
+_ti, _tn = 0, len(_tb)
+while _ti < _tn:
+    _s = _tb[_ti].rstrip()
+    if not _s or _s.startswith("# "):
+        _ti += 1
+        continue
+    if lib_docx.is_table_row(_s):
+        _blk = []
+        while _ti < _tn and lib_docx.is_table_row(_tb[_ti].rstrip()):
+            _blk.append(_tb[_ti].rstrip())
+            _ti += 1
+        lib_docx.render_md_table(doc, _blk, add_inline)
+        continue
+    _p = doc.add_paragraph(); add_inline(_p, _s)
+    _ti += 1
 
 # ================= FIGURE LEGENDS =================
 add_body(doc, read("FIGURE_LEGENDS.md"), h1_title="Figure Legends")

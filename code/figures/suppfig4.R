@@ -78,5 +78,5 @@ sf4 <- ggplot(pD, aes(b, rank)) +
        title="Ranked leave-one-out estimates stay inside the full-instrument 95% CI (band)") +
   theme_ckm(legend="none")
 
-save_fig(sf4, "SupplFig4", 178, 130)
+save_fig(sf4, "SupplFig4", 170, 124)
 cat("SF4 done; rendered from results/leaveoneout_headline.csv (", nrow(LOOALL), "rows read )\n")

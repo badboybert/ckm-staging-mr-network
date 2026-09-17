@@ -58,14 +58,38 @@ def add_inline(p, text):
             p.add_run(tok)
 
 
+def _row_cells(line):
+    return [c.strip() for c in line.strip().strip("|").split("|")]
+
+
+def _is_sep(cells):
+    return bool(cells) and all(set(c) <= set("-: ") and c for c in cells)
+
+
 def render(md, doc):
     lines = md.split("\n"); i = 0
     def is_break(s):
-        return (not s.strip()) or s.startswith(("#", "- ", "* ")) or set(s.strip()) <= set("-*_ ")
+        return (not s.strip()) or s.startswith(("#", "- ", "* ", "|")) or set(s.strip()) <= set("-*_ ")
     while i < len(lines):
         s = lines[i].rstrip()
         if not s.strip():
             i += 1; continue
+        # R6 (2026-08-20): a markdown table (the round-6 review flagged raw pipe syntax shipping in the
+        # R5 response .docx) — collect consecutive | rows, drop the |---| separator, render a real table.
+        if s.lstrip().startswith("|"):
+            rows = []
+            while i < len(lines) and lines[i].lstrip().startswith("|"):
+                rows.append(_row_cells(lines[i])); i += 1
+            rows = [r for r in rows if not _is_sep(r)]
+            if rows:
+                ncol = max(len(r) for r in rows)
+                tbl = doc.add_table(rows=0, cols=ncol); tbl.style = "Table Grid"
+                for r in rows:
+                    cells = tbl.add_row().cells
+                    for j in range(ncol):
+                        cells[j].text = ""
+                        add_inline(cells[j].paragraphs[0], r[j] if j < len(r) else "")
+            continue
         if s.startswith("### "):
             doc.add_heading(s[4:].strip(), 3); i += 1; continue
         if s.startswith("## "):
@@ -88,7 +112,9 @@ def render(md, doc):
 d = Document()
 n = d.styles["Normal"]; n.font.name = "Calibri"; n.font.size = Pt(10.5)
 n.paragraph_format.space_after = Pt(6)
-render(read(SRC), d)
+# Strip HTML comments before rendering — the round-6 review flagged the raw <!-- --> block shipping
+# as literal text on page 1 of the R5 response .docx.
+render(re.sub(r"<!--.*?-->", "", read(SRC), flags=re.S), d)
 cp = d.core_properties
 cp.author = "Bertrand Chin-Ming Tan"
 cp.last_modified_by = "Bertrand Chin-Ming Tan"

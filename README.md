@@ -1,4 +1,4 @@
-# Adiposity-centred causal architecture of cardiovascular–kidney–metabolic traits: a cross-ancestry Mendelian-randomization study of coronary disease and heart failure
+# Adiposity-centred causal architecture of cardiovascular–kidney–metabolic traits: a cross-ancestry Mendelian randomization study of coronary disease and heart failure
 
 Analysis code and frozen derived data for the manuscript above (submitted to *Cardiovascular
 Diabetology*).
@@ -9,7 +9,7 @@ tests whether the resulting graph is concordant with the American Heart Associat
 order, adjudicates cascade versus common-driver mechanism by multivariable MR and formal mediation,
 and evaluates directional portability in two East Asian hospital biobanks and one population cohort.
 **58** edges pass the network-wide Bonferroni threshold and
-**53**
+**54**
 survive Steiger gating.
 
 ## What is and is not here

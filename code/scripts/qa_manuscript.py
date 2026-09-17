@@ -181,15 +181,15 @@ KEY = {
   "CAD->HF 0.285":        (["RESULTS","DISCUSSION","ABSTRACT"], "0.285"),
   "CAD->HF P 1e-119":     (["RESULTS","DISCUSSION","ABSTRACT"], "10⁻¹¹⁹"),
   "staging conc 0.926":   (["RESULTS","DISCUSSION","FIGURE_LEGENDS"], "0.926"),
-  "staging P 1.5e-3 (exact)":(["RESULTS","DISCUSSION","FIGURE_LEGENDS","ABSTRACT","METHODS"], "1.5 × 10⁻³"),
+  "staging P 1.0e-3 (exact)":(["RESULTS","DISCUSSION","FIGURE_LEGENDS","ABSTRACT","METHODS"], "1.0 × 10⁻³"),
   # Scope narrowed to RESULTS on 2026-07-25: the Cardiovascular Diabetology 350-word abstract limit
   # cannot carry the reverse-edge Steiger P. What mattered about it in the abstract was the CALIBRATION
   # -- that CAD->HF must not read as a resolved direction -- so the number check is replaced there by
   # a claim check on the hedge itself, asserted immediately below. That is a stronger test, not a
   # weaker one: the number could be present while the hedge was dropped.
   "HF->CAD Steiger 2e-78":(["RESULTS"], "10⁻⁷⁸"),
-  "SBP->CKD EUR 1e-17":   (["RESULTS","DISCUSSION","ABSTRACT"], "10⁻¹⁷"),
-  "SBP->CKD EAS 0.66":    (["RESULTS","DISCUSSION","ABSTRACT"], "0.66"),
+  "SBP->CKD EUR 9e-7":    (["RESULTS","DISCUSSION","ABSTRACT"], "9 × 10⁻⁷"),
+  "SBP->CKD EAS zero-overlap 3e-3": (["RESULTS","DISCUSSION","ABSTRACT"], "3 × 10⁻³"),
   "BMI->HF 1e-31":        (["RESULTS","DISCUSSION","ABSTRACT"], "10⁻³¹"),
   "T2D->HF direct 0.41":  (["RESULTS","DISCUSSION","ABSTRACT"], "0.41"),
   "132 edges":            (["RESULTS","DISCUSSION","METHODS","ABSTRACT","INTRODUCTION"], "132"),
@@ -205,7 +205,7 @@ KEY = {
   "mediation covariance range": (["RESULTS","FIGURE_LEGENDS"], "44–116"),
   "mediation CI 16-25%":  (["RESULTS","FIGURE_LEGENDS"], "16–25"),
   "CAC staging 0.941":    (["RESULTS","FIGURE_LEGENDS"], "0.941"),
-  "interaction ns 0.43":  (["RESULTS","DISCUSSION","ABSTRACT"], "0.43"),
+  "SBP->CKD interaction ns 0.55": (["RESULTS","DISCUSSION","ABSTRACT"], "0.55"),
   # Was "1.1 × 10⁻³" over ["RESULTS","METHODS"] — the 111-edge value, which this gate went on
   # asserting after the network was completed. The UKB-free staging is now rebuilt on 132 edges.
   "UKBfree staging MAIN":  (["RESULTS"], "0.960"),

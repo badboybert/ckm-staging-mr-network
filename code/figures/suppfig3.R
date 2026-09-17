@@ -99,5 +99,5 @@ p_fun <- ggplot(funD, aes(biv, inv_se)) +
 
 sf3 <- (p_scat / p_fun) +
   plot_annotation(tag_levels="a", theme=theme(plot.tag=element_text(size=FS_TAG, face="bold")))
-save_fig(sf3, "SupplFig3", 178, 150)
+save_fig(sf3, "SupplFig3", 170, 143)
 cat("SF3 done\n")

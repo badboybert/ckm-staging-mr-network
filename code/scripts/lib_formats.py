@@ -54,7 +54,11 @@ FORMATS = {
                         beta="BETA",se="SE",p="P",n="N")),
  "HbA1c":dict(path="paper 4/independent_build/data/raw/HbA1c_MAGIC_EUR.h.tsv.gz",
               cols=dict(snp="hm_rsid",ea="effect_allele",oa="other_allele",eaf="effect_allele_frequency",
-                        beta="beta",se="standard_error",p="p_value",n=None), n_const=146806),
+                        beta="beta",se="standard_error",p="p_value",n=None), n_const=389889),  # GCST90014006 =
+                        # Mbatchou 2021 (UK Biobank, 389,889 EUR). The filename says MAGIC and the
+                        # manuscript used to say Chen 2021 / 146,806; the accession in
+                        # 02_download.sh is what was actually downloaded. Provenance corrected
+                        # 2026-09-16 - see scripts/79_fix_hba1c_n.py.
  "FI":   dict(path="paper 4/independent_build/data/raw/FI_MAGIC_EUR.f.tsv.gz",
               cols=dict(snp="variant_id",ea="effect_allele",oa="other_allele",eaf="effect_allele_frequency",
                         beta="beta",se="standard_error",p="p_value",n=None), n_const=151013),

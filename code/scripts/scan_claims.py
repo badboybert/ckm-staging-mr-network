@@ -78,7 +78,12 @@ PATTERNS = [
     # ---- S: superseded numbers ------------------------------------------------------------------
     ("S", "0.05/111", r"0\.05/111|4\.5 ?× ?10⁻⁴|4\.5e-0?4"),
     ("S", "111 as the current network", r"111[- ]edge|111 directed|\bthe 111\b"),
-    ("S", "retired staging P (1.8e-3)", r"1\.8 ?× ?10⁻³|(?<![\d.])0\.0018(?![\d])"),
+    # Round-7: scoped to a STAGING context. The bare literal also matches a legitimate edge-level
+    # P — the S5 legend reports HF→T2D at P = 1.8 × 10⁻³ against the Mahajan-noUKB outcome — and a
+    # rule that fires on any occurrence of four digits stops being about staging at all.
+    ("S", "retired staging P (1.8e-3)",
+     r"(?:permutation|concordance|staging|0\.926)[^.]{0,80}(?:1\.8 ?× ?10⁻³|(?<![\d.])0\.0018(?![\d]))"
+     r"|(?:1\.8 ?× ?10⁻³|(?<![\d.])0\.0018(?![\d]))[^.]{0,60}(?:permutation|staging|concordance)"),
     ("S", "superseded MC staging P (1.2e-3, now exact 1.5e-3)", r"(?:permutation|concordance|0\.926|staging)[^.]{0,60}1\.2 ?× ?10⁻³|1\.2 ?× ?10⁻³[^.]{0,40}(?:permutation|Figure 1b)"),
     ("S", "retired ledger counts", r"11 concordant|eleven concordant"),
     ("S", "Kendall tau portability", r"Kendall|τ ?= ?0\.49|44 ?(of|/) ?65"),

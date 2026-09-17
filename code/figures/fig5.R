@@ -26,26 +26,29 @@ source(file.path(P4_BASE, "figures", "fig_setup.R"))
 S5 <- read.csv(file.path(FIG, "suppfig_data", "fig5_source.csv"), stringsAsFactors = FALSE)
 pan <- function(k) S5[S5$panel == k, ]
 
-# ---------- 5a. Zheng SBP->CKD / BMI->CKD, EUR vs EAS ----------
+# ---------- 5a. SBP/BMI -> CKD: every kidney outcome, one estimator, one scale ----------
 .a <- pan("a")
-z <- data.frame(edge=.a$label, anc=.a$group, b=.a$b, se=.a$se, p=.a$p)
-z$lo<-z$b-1.96*z$se; z$hi<-z$b+1.96*z$se
-z$row <- factor(paste(z$edge, z$anc), levels=rev(c("SBP → CKD EUR","SBP → CKD EAS","BMI → CKD EUR","BMI → CKD EAS")))
-# Category labels are RENDERED into the figure legend, so they must hold calibration invariant 1
-# (MR language is "consistent with a causal effect", never a bare "causal"). Label by significance.
-z$sig <- ifelse(z$p<0.05, "P < 0.05", "n.s.")
-pa <- ggplot(z, aes(b, row, colour=sig)) +
+z <- data.frame(edge=.a$label, coh=.a$group, b=.a$b, se=.a$se, p=.a$p)
+z$lo <- z$b - 1.96*z$se; z$hi <- z$b + 1.96*z$se
+COH_LEVELS <- c("Europeans (CKDGen)", "East Asians (Biobank Japan)",
+                "East Asians (TPMI)", "East Asians (zero-overlap)")
+stopifnot(all(z$coh %in% COH_LEVELS))
+z$coh <- factor(z$coh, levels=rev(COH_LEVELS))
+z$edge <- factor(z$edge, levels=c("SBP → CKD", "BMI → CKD"))
+z$sig <- ifelse(z$p < 0.05, "P < 0.05", "n.s.")
+pa <- ggplot(z, aes(b, coh, colour=sig)) +
   geom_vline(xintercept=0, linewidth=0.3, colour="grey70") +
-  geom_errorbar(aes(xmin=lo,xmax=hi), width=0, linewidth=0.5, orientation="y") +
-  geom_point(aes(shape=anc), size=2.3) +
-  geom_text(aes(label=sprintf("P=%s", ifelse(p<0.01, sprintf("%.0e",p), sprintf("%.2f",p)))),
-            vjust=-1, size=FS/.pt-1.3, colour="grey30") +
+  geom_errorbar(aes(xmin=lo, xmax=hi), width=0, linewidth=0.5, orientation="y") +
+  geom_point(size=2.3) +
+  geom_text(aes(label=sprintf("P=%s", ifelse(p<0.01, sprintf("%.0e", p), sprintf("%.2f", p)))),
+            vjust=-1, size=FS/.pt-1.5, colour="grey30") +
+  facet_wrap(~edge, ncol=1, strip.position="right", scales="free_y") +
   scale_colour_manual(values=c("P < 0.05"=POS_COL, "n.s."=NULL_COL), name=NULL) +
-  scale_shape_manual(values=c(EUR=16, EAS=17), name=NULL) +
-  scale_y_discrete(labels=function(x) sub(" (EUR|EAS)$","",x)) +
-  labs(x="Causal effect on CKD (log-OR)", y=NULL,
-       title="SBP→CKD: EUR-supported, EAS underpowered (interaction n.s.)") +
-  coord_cartesian(xlim=c(-0.35,0.72)) + theme_ckm(legend="bottom")
+  labs(x="Causal effect on CKD (log-OR per SD of exposure)", y=NULL,
+       title="Kidney damage: positive in both ancestries once outcome size is matched") +
+  coord_cartesian(xlim=c(-0.55, 1.05)) +
+  theme_ckm(legend="bottom") +
+  theme(axis.text.y=element_text(size=7), strip.text.y=element_text(angle=0, face=2))
 
 # ---------- 5b. ->BMI triangulation: hospital vs population ----------
 .b <- pan("b")
@@ -61,7 +64,8 @@ pb <- ggplot(tr, aes(b, lab, colour=grp)) +
                                "Population cohort"=unname(COHORT_COL["Population"])),
                       labels=c("Hospital biobank"="Hospital","Population cohort"="Population"), name=NULL) +
   labs(x="T2D / DM → adiposity effect", y=NULL, title="→BMI does not disappear in population cohorts") +
-  coord_cartesian(xlim=c(-0.16,0.03)) + theme_ckm(legend="bottom") +
+  scale_x_continuous(breaks=c(-0.15,-0.10,-0.05,0)) +
+  coord_cartesian(xlim=c(-0.17,0.04)) + theme_ckm(legend="bottom") +
   theme(axis.text.y=element_text(size=8))
 
 # ---------- 5c. per-SNP mechanism (DM instrument effect on BMI) ----------
@@ -183,4 +187,4 @@ pf <- ggplot(ad, aes(ivw_b, outcome, colour=series, shape=sig)) +
 fig5 <- (pa | pb) / (pc | pd) / (pe | pf) +
   plot_layout(heights=c(1, 1.05, 0.92)) +
   plot_annotation(tag_levels="a", theme=theme(plot.tag=element_text(size=FS_TAG, face="bold")))
-save_fig(fig5, "SupplFig6", 183, 232)
+save_fig(fig5, "SupplFig6", 170, 214)

@@ -41,7 +41,10 @@ def exps_for(outcome):
 N_FINNGEN = 500348   # FinnGen R12 data-freeze total (cohort total; endpoint-specific effective N unknown)
 N_MAHAJAN = 231436   # Mahajan 2018 Nat Genet EUR (74,124 cases + 157,312 controls), no-UKB DIAGRAM
 N_MEGA    = 446696   # MEGASTROKE all-stroke EUR (non-UKB release)
-N_CKDGEN  = 567460   # CKDGen 2016 (Pattaro) eGFRcrea EUR
+# Round-7 provenance correction. Was 567460 - the N of a later CKDGen release - on a file whose own
+# ##SAMPLE header declares TotalControls=133413.0, matching GWAS Catalog GCST003372 (Pattaro 2016).
+# Read from the header below rather than trusted from here; this value is the assertion, not the input.
+N_CKDGEN  = 133413   # CKDGen 2016 (Pattaro) eGFRcrea EUR, GCST003372
 
 PROVIDERS = [
   dict(outcome="CAD",    tag="CARDIoGRAM", path=os.path.join(UP,"CAD_CARDIoGRAM_ieu-a-7.vcf.gz"),          type="vcf",     n_const=None),
@@ -54,8 +57,43 @@ PROVIDERS = [
   dict(outcome="eGFR",   tag="CKDGen",     path=os.path.join(UP,"eGFR_CKDGen_ebi-a-GCST003372.vcf.gz"),    type="vcf",     n_const=N_CKDGEN),
 ]
 
+# Every VCF provider must agree with the sample size its own header declares. This is the check that
+# was missing: MEGASTROKE and CARDIoGRAM already reconciled, and the one provider that did not is the
+# one that was wrong by 4.25x (round-7 provenance audit).
+def _reconcile_vcf_sample_sizes():
+    for _pr in PROVIDERS:
+        if _pr["type"] != "vcf" or _pr.get("n_const") is None:
+            continue
+        _declared = vcf_declared_n(_pr["path"])
+        if _declared is None:
+            print(f"  NOTE {_pr['tag']}: VCF declares no sample size in its ##SAMPLE header")
+            continue
+        if _declared != _pr["n_const"]:
+            raise SystemExit(
+                f"PROVENANCE: {_pr['tag']} ({os.path.basename(_pr['path'])}) declares N = {_declared:,} "
+                f"in its own header but the pipeline assigns {_pr['n_const']:,}. Fix the constant or "
+                f"explain the difference - do not let a filename or a neighbouring release set an N.")
+        print(f"  provenance OK: {_pr['tag']} header N = {_declared:,} matches the assigned constant")
+
 def _open(p):
     return gzip.open(p, "rt", errors="replace") if p.endswith(".gz") else open(p, "rt", errors="replace")
+
+def vcf_declared_n(path):
+    """Sample size a GWAS-VCF declares in its own ##SAMPLE line (TotalCases + TotalControls).
+
+    Round-7: the eGFR provider shipped with a constant 4.25x its declared size for six review rounds
+    because nothing ever compared the two. A file that states its N is the authority on its N."""
+    import re as _re
+    with _open(path) as fh:
+        for line in fh:
+            if not line.startswith("#"):
+                break
+            if line.startswith("##SAMPLE="):
+                cases = _re.search(r"TotalCases=([0-9.]+)", line)
+                ctrls = _re.search(r"TotalControls=([0-9.]+)", line)
+                n = sum(int(float(m.group(1))) for m in (cases, ctrls) if m)
+                return n or None
+    return None
 
 def load_clumped_snps(node):
     f = os.path.join(INSTR, f"{node}.clumped.tsv")
@@ -143,13 +181,34 @@ def collect(provider, need):
 def outfile(exp, outcome, tag):
     return os.path.join(HARM, f"{exp}__{outcome}_{tag}.outcome.tsv")
 
+_reconcile_vcf_sample_sizes()
+
 for prov in PROVIDERS:
     o = prov["outcome"]; tag = prov["tag"]
     exps = exps_for(o)
     expected = [outfile(e, o, tag) for e in exps]
+    def _stale_n(path):
+        """True if an existing output carries a sample size other than the one now configured."""
+        if prov.get("n_const") is None:
+            return False
+        try:
+            with io.open(path, encoding="utf-8") as _fh:
+                _h = _fh.readline().rstrip("\n").split("\t")
+                if "N" not in _h:
+                    return False
+                _j = _h.index("N")
+                _row = _fh.readline().rstrip("\n").split("\t")
+                return len(_row) > _j and _row[_j] not in ("", str(prov["n_const"]))
+        except OSError:
+            return True
+
     if all(os.path.exists(p) and os.path.getsize(p) > 0 for p in expected):
-        print(f"[skip] {o}/{tag}: all {len(expected)} outcome files present", flush=True)
-        continue
+        _stale = [p for p in expected if _stale_n(p)]
+        if not _stale:
+            print(f"[skip] {o}/{tag}: all {len(expected)} outcome files present", flush=True)
+            continue
+        print(f"[REDO] {o}/{tag}: {len(_stale)} existing file(s) carry a superseded sample size "
+              f"-- re-extracting", flush=True)
     if not os.path.exists(prov["path"]):
         print(f"[MISS] {o}/{tag}: file not found {prov['path']} -- skipping", flush=True)
         continue

@@ -28,6 +28,21 @@ if (!nzchar(SHARED_LIB)) SHARED_LIB <- file.path(CKM_ROOT, "_shared")
 #   - panel d adds the zero-overlap BBJ-exposure -> TPMI-outcome series (answers the C5 overlap concern).
 source(file.path(P4_BASE, "figures", "fig_setup.R"))
 suppressMessages(library(dplyr))
+# Round-7 C089: the panels printed raw P values (P=0.001515) while the legend and the Results print
+# 1.5 × 10⁻³. One formatter, matching the manuscript's convention exactly (three decimals at or
+# above 0.01, otherwise a mantissa to two significant figures and a real superscript exponent), is
+# used for every P drawn in this figure, so panel and prose print the SAME string.
+.sup <- function(e) {
+  d <- c("⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹")
+  paste0("⁻", paste(d[as.integer(strsplit(as.character(abs(e)), "")[[1]]) + 1], collapse=""))
+}
+.pf1 <- function(p) {
+  if (!is.finite(p)) return("NA")
+  if (p >= 0.01) return(sprintf("%.3f", p))
+  e <- floor(log10(p)); m <- p / 10^e
+  paste0(sub("\\.0$", "", sprintf("%.1f", m)), " × 10", .sup(e))
+}
+.pf <- function(p) vapply(p, .pf1, character(1))
 D    <- file.path(FIG, "data")
 DD6  <- file.path(FIG, "suppfig_data")
 ee   <- rd("eur_vs_eas_comparison.csv"); tb <- rd("tpmi_bbj_eur_comparison.csv")
@@ -50,7 +65,7 @@ p_stage <- ggplot(st, aes(cohort, concordance, fill=sig)) +
   geom_hline(yintercept=0.5, linetype="dashed", colour="grey60", linewidth=0.3) +
   annotate("label", x=3.4, y=0.52, label="chance", size=FS/.pt-1.2, colour="grey55", hjust=1,
            fill="white", label.size=0, label.padding=unit(0.5,"pt")) +
-  geom_text(aes(label=sprintf("%.3f\nP=%.4g", concordance, perm_p)), vjust=-0.3,
+  geom_text(aes(label=sprintf("%.3f\nP=%s", concordance, .pf(perm_p))), vjust=-0.3,
             size=FS/.pt-1.3, lineheight=0.9) +
   scale_fill_manual(values=c("beyond chance"="#2E7D32","not significant"=NULL_COL), name=NULL) +
   labs(x=NULL, y="Cross-stage concordance") +
@@ -62,7 +77,7 @@ nulls6 <- rbind(
   data.frame(cohort="BBJ",  concordance=read.csv(file.path(DD6,"suppfig6_null_BBJ.csv"))$concordance),
   data.frame(cohort="TPMI", concordance=read.csv(file.path(DD6,"suppfig6_null_TPMI.csv"))$concordance))
 nulls6$cohort <- factor(nulls6$cohort, levels=c("EUR","BBJ","TPMI"))
-ob <- st; ob$lab <- sprintf("obs=%.3f\nP=%.4g", ob$concordance, ob$perm_p)
+ob <- st; ob$lab <- sprintf("obs=%.3f\nP=%s", ob$concordance, .pf(ob$perm_p))
 # the plotted EUR null must reproduce the printed EUR P (self-check, mirrors fig1.R)
 p_emp <- mean(nulls6$concordance[nulls6$cohort=="EUR"] >= ob$concordance[ob$cohort=="EUR"])
 stopifnot(abs(p_emp - ob$perm_p[ob$cohort=="EUR"]) < 1e-9)
@@ -118,9 +133,11 @@ p_scatter <- ggplot(sc, aes(EUR_b, EAS_b)) +
   # It is placed in the EMPTY upper-left quadrant, NOT riding the line: an angled label on the line
   # ran straight through the TG->CAD / BMI->HF labels and the central point cloud (checked in the PNG).
   # plotmath, not "beta_EAS", so the panel prints a real subscript rather than a variable name.
-  annotate("text", x=-0.53, y=0.74, hjust=0, colour=POS_COL, size=FS/.pt-1.5,
+  # Round-7 C029: at 170 mm the two-line note reached the TC->CAD point label. It moves to the
+  # empty lower-right quadrant, where no comparable-scale edge falls.
+  annotate("text", x=-0.53, y=1.02, hjust=0, colour=POS_COL, size=FS/.pt-1.5,
            label="solid line: fitted global offset") +
-  annotate("text", x=-0.53, y=0.63, hjust=0, colour=POS_COL, size=FS/.pt-1.5, parse=TRUE,
+  annotate("text", x=-0.53, y=0.92, hjust=0, colour=POS_COL, size=FS/.pt-1.5, parse=TRUE,
            label=sprintf("beta[EAS] == %.3f %%*%% beta[EUR]", GLOBAL_SLOPE)) +
   annotate("text", x=1.03, y=-0.5, label="comparable-scale edges only\n(SBP, HbA1c, eGFR excluded)",
            hjust=1, size=FS/.pt-1.7, colour="grey45", lineheight=0.9) +
@@ -163,8 +180,13 @@ p_anom <- ggplot(La, aes(b, edge, colour=cohort, shape=sig)) +
   geom_point(size=2.4, position=position_dodge(width=0.6)) +
   scale_colour_manual(values=COHORT_COL[c("EUR","BBJ","TPMI")], name=NULL) +
   scale_shape_manual(values=c(sig=16, ns=1), name=NULL, labels=c(sig="P<0.05", ns="n.s.")) +
-  annotate("text", x=0.55, y=3.35, label="TPMI estimate aligns\nwith the EUR direction", size=FS/.pt-1.5,
+  # Round-7 C037: this annotation used to sit above BMI→T2D — the one row the legend and the
+  # Results say is NOT resolved by the second cohort, because its TPMI estimate comes from the
+  # overlap-prone within-cohort design. It belongs on BMI→CAD, the anomaly that does resolve.
+  annotate("text", x=0.72, y=2.42, label="TPMI recovers the\nEuropean direction", size=FS/.pt-1.5,
            colour="grey30", lineheight=0.9) +
+  annotate("text", x=0.72, y=3.42, label="not resolved:\nTPMI estimate is\nwithin-cohort only", size=FS/.pt-1.6,
+           colour="grey45", lineheight=0.9) +
   labs(x="Causal effect", y=NULL) +
   coord_cartesian(xlim=c(-0.35,1.15)) + theme_ckm(legend="bottom")
 
@@ -205,4 +227,4 @@ p_port <- ggplot(sg, aes(estimate, block, colour=verdict)) +
 fig4 <- (p_stage | p_null) / (p_scatter | p_casc) / (p_anom | p_port) +
   plot_layout(heights=c(1, 1, 1)) +
   plot_annotation(tag_levels="a", theme=theme(plot.tag=element_text(size=FS_TAG, face="bold")))
-save_fig(fig4, "Figure4", 183, 232)
+save_fig(fig4, "Figure4", 170, 214)

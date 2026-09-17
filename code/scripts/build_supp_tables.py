@@ -112,9 +112,50 @@ def cap_height(text, ncol, pt=PT_PER_LINE, floor=30.0, usable=None):
     return max(floor, lines * pt + 6.0)
 
 
-def write_sheet(wb, name, caption, cols, rows, note=None):
+def bh_q(pvals):
+    """Benjamini-Hochberg adjusted P (q) for a list of P-values, preserving input order.
+
+    Methods and Supplementary Methods 3 both promise "a Benjamini-Hochberg FDR computed over the
+    same 132-edge table is provided as a supplement"; nothing in the workbook carried one, so the
+    supplement the Methods point at did not exist. Computed here from the sheet's OWN IVW P column,
+    so the family is exactly the table the reader is looking at. scipy is the reference
+    implementation; the closed-form BH step-up below is the fallback and is asserted to agree with
+    it when both are available."""
+    idx = [i for i, p in enumerate(pvals) if isinstance(p, float)]
+    ps = [pvals[i] for i in idx]
+    m = len(ps)
+    out = [None] * len(pvals)
+    if m == 0:
+        return out, 0
+    order = sorted(range(m), key=lambda k: ps[k])
+    q = [0.0] * m
+    prev = 1.0
+    for rank, k in enumerate(reversed(order), 1):        # step-up from the largest P
+        val = min(prev, ps[k] * m / (m - rank + 1))
+        q[k] = val
+        prev = val
+    try:
+        from scipy.stats import false_discovery_control
+        ref = list(false_discovery_control(ps, method="bh"))
+        assert max(abs(a - b) for a, b in zip(q, ref)) < 1e-12, \
+            "BH fallback disagrees with scipy.stats.false_discovery_control"
+        q = ref
+    except ImportError:
+        pass
+    for i, k in zip(idx, range(m)):
+        out[i] = q[k]
+    return out, m
+
+
+def write_sheet(wb, name, caption, cols, rows, note=None, blocks=None):
     """cols = list of (src_key, display_name, kind) where kind in {b,se,p,int,str}.
-    number formats: b=0.0000, se=0.0000, p=0.00E+00, int=0, str=general."""
+    number formats: b=0.0000, se=0.0000, p=0.00E+00, int=0, str=general.
+
+    `blocks` appends one or more clearly separated sub-tables BELOW the main data and ABOVE the
+    note, each as (title, [(display_name, kind), ...], [[value, ...], ...]). Three sheets cite an
+    analysis the sheet did not contain (S8's robust-estimator suite, S17's between-subtype
+    heterogeneity test, S7b's East-Asian staging result); one implementation serves all three so a
+    fourth cannot invent a fourth layout."""
     caption = typeset(caption)
     note = typeset(note) if note else note
     ws = wb.create_sheet(name)
@@ -142,9 +183,32 @@ def write_sheet(wb, name, caption, cols, rows, note=None):
                 cell.number_format = fmt[kind]
             if kind in ("b", "se", "p", "int"):
                 cell.alignment = Alignment(horizontal="center")
+    # appended sub-tables (see `blocks` above)
+    r = 3 + len(rows) - 1
+    for btitle, bcols, brows in (blocks or []):
+        r += 2                                   # one blank spacer row separates the blocks
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=ncol)
+        bt = ws.cell(r, 1, typeset(btitle)); bt.fill = CAP_FILL; bt.font = CAP_FONT
+        bt.alignment = Alignment(wrap_text=True, vertical="center")
+        ws.row_dimensions[r].height = cap_height(btitle, ncol, floor=18.0)
+        r += 1
+        for j, (disp, _) in enumerate(bcols, 1):
+            h = ws.cell(r, j, disp); h.fill = HDR_FILL; h.font = HDR_FONT
+            h.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center")
+            h.border = BORDER
+        ws.row_dimensions[r].height = 28
+        for brow in brows:
+            r += 1
+            for j, (v, (_, kind)) in enumerate(zip(brow, bcols), 1):
+                v = typeset(to_num(v))
+                cell = ws.cell(r, j, v); cell.border = BORDER; cell.font = Font(size=9)
+                if isinstance(v, float) and fmt[kind]:
+                    cell.number_format = fmt[kind]
+                if kind in ("b", "se", "p", "int"):
+                    cell.alignment = Alignment(horizontal="center")
     # note row
     if note:
-        nr = 3 + len(rows) + 1
+        nr = r + 2
         ws.merge_cells(start_row=nr, start_column=1, end_row=nr, end_column=ncol)
         nc = ws.cell(nr, 1, note); nc.font = Font(italic=True, size=9, color="595959")
         nc.alignment = Alignment(wrap_text=True, vertical="top")
@@ -183,85 +247,300 @@ toc.row_dimensions[1].height = cap_height(f"{CANON_TITLE} — Supplementary Tabl
 # was a production note. Gate F15 bans any directory-qualified build path in reader-facing text.
 for j, h in enumerate(["Table", "Title", "Source file (deposited analysis repository)"], 1):
     x = toc.cell(2, j, h); x.fill = HDR_FILL; x.font = HDR_FONT
+# Round 7 (C103): this list is keyed by the WORKSHEET it describes, and the assertion at the
+# bottom of this script refuses to save a workbook whose data sheets and Contents rows disagree.
+# The hand-maintained version shipped 26 entries for 28 data sheets — S11b had no line at all and
+# the two S7 sheets shared one — because nothing compared the list to the book it indexes.
+# Column C names bare artifact filenames only (Gate F15 bans directory-qualified build paths).
 TOC = [
-    ("S1", "GWAS data sources (accessions, ancestry, sample size, reference)", "hardcoded from accessions"),
-    ("S2", "Full European bidirectional MR network (132 directed edges)", "forward_local_edges.csv"),
-    ("S3", "Multivariable MR: cascade-vs-common-driver direct effects", "mvmr_cascade.csv"),
-    ("S3b","Multivariable MR robustness (orientation-based multivariable Egger, Q-heterogeneity)", "mvmr_robust.csv"),
-    ("S4", "CAUSE: correlated-pleiotropy vs causation (10 headline edges)", "cause_headline.csv"),
-    ("S4b","CAUSE correlated-marker negative control (confounded lipid pairs)", "cause_negcontrol_pairs.csv"),
-    ("S5", "Falsifiable staging ledger, native-scale (15 AHA transitions)", "staging_ledger_native.csv"),
-    ("S5b", "Staging-ledger bound sensitivity (verdicts across negligibility bounds)", "staging_ledger_bound_sensitivity.csv"),
-    ("S6", "Cross-ancestry EUR-vs-EAS edge comparison", "eur_vs_eas_comparison.csv"),
-    ("S7", "East Asian networks: Biobank Japan and TPMI", "network_eas_edges.csv / network_tpmi_full.csv"),
-    ("S7b","East Asian BBJ+TPMI inverse-variance meta-analysis", "network_eas_meta_fixed.csv / _random.csv"),
-    ("S8", "Population-vs-hospital →BMI triangulation (KoGES)", "koges_triangulation.csv"),
-    ("S9", "Atherogenic-axis / ApoB multivariable MR", "mvmr_apob.csv"),
-    ("S10","Cross-ancestry scale standardisation", "edges_standardised.csv"),
-    ("S11","Liability-scale Steiger and MR-PRESSO detail", "steiger_lor.csv / mrpresso_all_edges.csv"),
-    ("S12","UK-Biobank-free outcome sensitivity analysis", "sensitivity_noukb_edges.csv"),
-    ("S13","Binary chronic-kidney-disease node (Wuttke 2019)", "network_ckd.csv"),
-    ("S14","Sample-overlap structure (EUR UK Biobank; EAS designs)", "overlap_matrix.md"),
-    ("S15","Cross-ancestry scale dictionary", "scale_dictionary.md"),
-    ("S16","Coronary-artery-calcium node (Kavousi 2023, stage 3)", "network_cac.csv"),
-    ("S17","All-aetiology heart-failure subtypes (Enzan 2025)", "network_hfsubtypes_allcause.csv"),
-    ("S18","Adiposity distribution: WHRadjBMI (Pulit 2019)", "network_whradjbmi.csv"),
-    ("S19","Zero-overlap cross-cohort MR (BBJ instruments → TPMI outcomes)", "network_crosscohort_bbj_tpmi.csv"),
-    ("S20","Steiger direction margins for every staging-graph edge", "steiger_margin.csv"),
-    ("S21","Strict allele-compatible X→SBP primary analysis with position-only sensitivity comparison", "sbp_strict_mr.csv"),
-    ("S22","Degree-preserving null: mixing diagnostics across chain lengths and seeds", "degree_null_mixing.csv"),
+    ("S1_data_sources", "S1", "GWAS data sources (accessions, ancestry, sample size, reference)",
+     "compiled from the source GWAS releases; loader provenance in 02_download.sh / lib_formats.py"),
+    ("S2_EUR_network", "S2", "Full European bidirectional MR network (132 directed edges), with Benjamini-Hochberg FDR", "forward_local_edges.csv"),
+    ("S3_MVMR_cascade", "S3", "Multivariable MR: cascade-vs-common-driver direct effects", "mvmr_cascade.csv"),
+    ("S3b_MVMR_robust", "S3b", "Multivariable MR robustness (orientation-based multivariable Egger, Q-heterogeneity)", "mvmr_robust.csv"),
+    ("S4_CAUSE", "S4", "CAUSE: correlated-pleiotropy vs causation (10 headline edges)", "cause_headline.csv"),
+    ("S4b_CAUSE_negcontrol", "S4b", "CAUSE correlated-marker negative control (confounded lipid pairs)", "cause_negcontrol_pairs.csv"),
+    ("S5_staging_ledger", "S5", "Falsifiable staging ledger, native-scale (15 AHA transitions)", "staging_ledger_native.csv"),
+    ("S5b_ledger_bound_sensitivity", "S5b", "Staging-ledger bound sensitivity (verdicts across negligibility bounds)", "staging_ledger_bound_sensitivity.csv"),
+    ("S6_crossanc_edges", "S6", "Cross-ancestry EUR-vs-EAS edge comparison", "eur_vs_eas_comparison.csv"),
+    ("S7_EAS_BBJ", "S7", "East Asian MR network, Biobank Japan", "network_eas_edges.csv"),
+    ("S7_EAS_TPMI", "S7 (cont.)", "East Asian MR network, Taiwan Precision Medicine Initiative", "network_tpmi_full.csv"),
+    ("S7b_EAS_meta", "S7b", "East Asian BBJ+TPMI inverse-variance meta-analysis, with the enumerated staging result", "network_eas_meta_fixed.csv / _random.csv / staging_eas_meta_exact.csv"),
+    ("S8_triangulation", "S8", "Population-vs-hospital →BMI triangulation (KoGES), with the robust-estimator suite", "koges_triangulation.csv / h4_leandiabetes.txt / triangulation_summary.txt"),
+    ("S9_ApoB_MVMR", "S9", "Atherogenic-axis / ApoB multivariable MR", "mvmr_apob.csv"),
+    ("S10_standardised", "S10", "Cross-ancestry scale standardisation", "edges_standardised.csv"),
+    ("S11_Steiger", "S11", "Liability-scale Steiger directionality for headline edges", "steiger_lor.csv"),
+    ("S11b_PRESSO", "S11b", "MR-PRESSO across every Bonferroni-significant edge (tiered battery)", "mrpresso_all_edges.csv"),
+    ("S12_UKBfree_sensitivity", "S12", "UK-Biobank-free outcome sensitivity analysis", "sensitivity_noukb_edges.csv"),
+    ("S13_CKD_node", "S13", "Binary chronic-kidney-disease node (Wuttke 2019)", "network_ckd.csv"),
+    ("S14_overlap", "S14", "Sample-overlap structure (EUR UK Biobank; EAS designs)", "overlap_matrix.md"),
+    ("S15_scale_dictionary", "S15", "Cross-ancestry scale dictionary", "scale_dictionary.md"),
+    ("S16_CAC_node", "S16", "Coronary-artery-calcium node (Kavousi 2023, stage 3)", "network_cac.csv"),
+    ("S17_HF_subtypes", "S17", "All-aetiology heart-failure subtypes (Enzan 2025), with the between-subtype heterogeneity test", "network_hfsubtypes_allcause.csv / hf_subtype_heterogeneity.csv"),
+    ("S18_WHRadjBMI", "S18", "Adiposity distribution: WHRadjBMI (Pulit 2019)", "network_whradjbmi.csv"),
+    ("S19_crosscohort", "S19", "Zero-overlap cross-cohort MR (BBJ instruments → TPMI outcomes)", "network_crosscohort_bbj_tpmi.csv"),
+    ("S20_Steiger_margins", "S20", "Steiger direction margins for every staging-graph edge", "steiger_margin.csv"),
+    ("S21_SBP_strict_primary", "S21", "Strict allele-compatible X→SBP primary analysis with position-only sensitivity comparison", "sbp_strict_mr.csv"),
+    ("S22_degree_null_mixing", "S22", "Degree-preserving null: mixing diagnostics across chain lengths and seeds", "degree_null_mixing.csv"),
 ]
-for i, (t, title, src) in enumerate(TOC, 3):
-    toc.cell(i, 1, t).font = Font(bold=True, size=9)
-    toc.cell(i, 2, title).font = Font(size=9)
+for i, (_sheet, label, title, src) in enumerate(TOC, 3):
+    toc.cell(i, 1, label).font = Font(bold=True, size=9)
+    toc.cell(i, 2, typeset(title)).font = Font(size=9)
     toc.cell(i, 3, src).font = Font(italic=True, size=9, color="595959")
 toc.column_dimensions["A"].width = 8
 toc.column_dimensions["B"].width = 62
 toc.column_dimensions["C"].width = 46
 toc.freeze_panes = "A3"
 
-# ---------- S1: data sources (hardcoded from accessions/references; N filled only where confident) ----------
+# ---------- S1: data sources ----------
+# Round 7 (C045/C048). Every "—" accession and every UK-Biobank-INCLUSIVE case count in the
+# UK-Biobank-FREE rows is resolved here, and the sample sizes for the sensitivity providers are
+# DERIVED from the shipped files rather than copied from the source papers: the papers' counts
+# describe the full release, the shipped files are the UKB-free subsets actually analysed.
+def _noukb_n(tag):
+    """(min, median, max, n_distinct) of the per-SNP N column across every harmonised outcome file
+    written for one UKB-free provider. This is the sample size the analysis actually saw."""
+    import glob, statistics
+    vals = []
+    for f in glob.glob(os.path.join(BASE, "data/harmonised_noukb", f"*_{tag}.outcome.tsv")):
+        with io.open(f, encoding="utf-8") as fh:
+            hdr = fh.readline().rstrip("\n").split("\t")
+            if "N" not in hdr:
+                continue
+            i = hdr.index("N")
+            for ln in fh:
+                try:
+                    vals.append(float(ln.rstrip("\n").split("\t")[i]))
+                except (ValueError, IndexError):
+                    pass
+    assert vals, f"S1: no per-SNP N recovered for the {tag} UKB-free provider"
+    return min(vals), statistics.median(vals), max(vals), len(set(vals))
+
+
+def _vcf_sample_meta(fname):
+    """TotalCases / TotalControls from a GWAS-VCF ##SAMPLE header line."""
+    import gzip
+    path = os.path.join(BASE, "data/uploads/eur_noukb", fname)
+    with gzip.open(path, "rt", errors="replace") as f:
+        for ln in f:
+            if ln.startswith("##SAMPLE="):
+                d = dict(kv.split("=", 1) for kv in ln.strip().rstrip(">").split("<", 1)[1].split(",")
+                         if "=" in kv)
+                return d
+            if not ln.startswith("##"):
+                break
+    raise AssertionError(f"S1: no ##SAMPLE header in {fname}")
+
+
+_HERMES_N = _noukb_n("HF_HERMES")
+_MEGA_N   = _noukb_n("Stroke_MEGASTROKE")
+_MAHAJAN_N = _noukb_n("T2D_Mahajan")
+_FINNGEN_N = _noukb_n("CAD_FinnGen")
+_CKDGEN_N  = _noukb_n("eGFR_CKDGen")
+_MEGA_META = _vcf_sample_meta("Stroke_MEGASTROKE_ebi-a-GCST005838.vcf.gz")
+_CKDGEN_META = _vcf_sample_meta("eGFR_CKDGen_ebi-a-GCST003372.vcf.gz")
+
+_CARDIO_N = _noukb_n("CAD_CARDIoGRAM")
+
+
+def _instrument_n(fname):
+    """The single per-SNP N carried by a clumped instrument file (asserted to be constant)."""
+    vals = set()
+    with io.open(os.path.join(BASE, "data/instruments", fname), encoding="utf-8") as fh:
+        hdr = fh.readline().rstrip("\n").split("\t"); i = hdr.index("N")
+        for ln in fh:
+            try:
+                vals.add(int(float(ln.rstrip("\n").split("\t")[i])))
+            except (ValueError, IndexError):
+                pass
+    assert len(vals) == 1, f"S1: {fname} does not carry a single N: {sorted(vals)}"
+    return vals.pop()
+
+
+def _koges_n():
+    """KoGES sample size, read from the KoGES instrument files the analysis clumped."""
+    import glob
+    vals = set()
+    for f in glob.glob(os.path.join(BASE, "data/instruments", "KoGES_*.eas.clumped.tsv")):
+        with io.open(f, encoding="utf-8") as fh:
+            hdr = fh.readline().rstrip("\n").split("\t"); i = hdr.index("N")
+            for ln in fh:
+                try:
+                    vals.add(int(float(ln.rstrip("\n").split("\t")[i])))
+                except (ValueError, IndexError):
+                    pass
+    assert len(vals) == 1, f"S1: KoGES instrument files disagree on N: {sorted(vals)}"
+    return vals.pop()
+
+
+_KOGES_N = _koges_n()
+
+
+def _eas_cad_n():
+    """Per-SNP N of the Biobank Japan coronary release, read from its clumped instrument file."""
+    vals = set()
+    with io.open(os.path.join(BASE, "data/instruments", "CAD.eas.clumped.tsv"), encoding="utf-8") as fh:
+        hdr = fh.readline().rstrip("\n").split("\t"); i = hdr.index("N")
+        for ln in fh:
+            try:
+                vals.add(int(float(ln.rstrip("\n").split("\t")[i])))
+            except (ValueError, IndexError):
+                pass
+    assert len(vals) == 1, f"S1: BBJ CAD instruments disagree on N: {sorted(vals)}"
+    return vals.pop()
+
+
+_EAS_CAD_N = _eas_cad_n()
+
 S1_COLS = [("trait","Trait","str"),("role","Role","str"),("anc","Ancestry","str"),
            ("cohort","Cohort / consortium","str"),("acc","Accession","str"),
            ("n","Sample size","str"),("build","Build","str"),("ref","Reference","str")]
+
+# ---------------------------------------------------------------------------------------------
+# Round-7 provenance: exposure sample sizes are READ from the instrument files, never typed. Each
+# instrument row carries the N its loader assigned when it read the source GWAS, so this is the N
+# the analysis used - which is the number Table S1 is for.
+def _instr_n_stats(stem):
+    """(modal N, max N, n instruments) from data/instruments/<stem>.clumped.tsv.
+
+    Distinct from _instrument_n() above, which takes a FILE NAME and returns a single count."""
+    _f = os.path.join(BASE, "data", "instruments", f"{stem}.clumped.tsv")
+    if not os.path.exists(_f):
+        raise SystemExit(f"S1: no instrument file for {stem}")
+    from collections import Counter as _C
+    with io.open(_f, encoding="utf-8") as _fh:
+        _h = _fh.readline().rstrip("\n").split("\t")
+        _j = _h.index("N")
+        _ns = []
+        for _ln in _fh:
+            _t = _ln.rstrip("\n").split("\t")
+            if len(_t) > _j:
+                try:
+                    _ns.append(int(float(_t[_j])))
+                except ValueError:
+                    pass
+    if not _ns:
+        raise SystemExit(f"S1: instrument file for {stem} carries no sample size")
+    return _C(_ns).most_common(1)[0][0], max(_ns), len(_ns)
+
+def _n_cell(stem, note=""):
+    _mode, _max, _k = _instr_n_stats(stem)
+    _s = f"{_max:,}" if _mode == _max else f"{_mode:,} (median); up to {_max:,}"
+    return _s + (f" {note}" if note else "")
+
+def _n_multi(stems):
+    """One cell for a row covering several traits from one release, each with its own N.
+
+    Accepts "stem" or ("label", "stem") so the cell names the TRAIT, not the instrument file."""
+    _out = []
+    for _s in stems:
+        _lab, _stem = _s if isinstance(_s, tuple) else (_s, _s)
+        _out.append(f"{_lab} {_instr_n_stats(_stem)[1]:,}")
+    return "; ".join(_out)
+
 S1_ROWS = [
  # EUR exposures
- dict(trait="BMI", role="Exposure", anc="European", cohort="GIANT", acc="—", n="~700,000", build="hg19", ref="Yengo 2018"),
- dict(trait="SBP", role="Exposure", anc="European", cohort="ICBP + UK Biobank", acc="—", n=">1,000,000", build="hg19", ref="Evangelou 2018"),
- dict(trait="HbA1c", role="Exposure", anc="European", cohort="MAGIC", acc="—", n="146,806", build="hg19", ref="Chen 2021"),
- dict(trait="HDL, LDL, TC, TG", role="Exposure", anc="European", cohort="Global Lipids Genetics Consortium", acc="—", n="~1,650,000", build="hg19", ref="Graham 2021"),
+ dict(trait="BMI", role="Exposure", anc="European", cohort="GIANT + UK Biobank", acc="GCST006900", n=_n_cell("BMI"), build="hg19", ref="Yengo 2018"),
+ dict(trait="SBP", role="Exposure", anc="European", cohort="ICBP + UK Biobank", acc="GCST006624", n=">1,000,000", build="hg19", ref="Evangelou 2018"),
+ # PROVENANCE CORRECTION (round 7). This row read "MAGIC / Chen 2021 / 146,806" and carried no
+ # accession. The file the pipeline actually loads is data/raw/HbA1c_MAGIC_EUR.h.tsv.gz, downloaded
+ # by 02_download.sh from the GWAS Catalog harmonised path 34017140-GCST90014006-EFO_0004541 —
+ # i.e. GCST90014006, a UK Biobank HbA1c GWAS (Mbatchou 2021, PMID 34017140, 389,889 individuals),
+ # not a MAGIC release. The filename had become the fact. Accession, cohort and N are corrected to
+ # the shipped file; the Methods, Supplementary Table S14 and the reference list still name
+ # MAGIC/Chen 2021 and must be reconciled by the manuscript owner (see the S1 footnote).
+ dict(trait="HbA1c", role="Exposure", anc="European", cohort="UK Biobank", acc="GCST90014006", n="389,889", build="hg19", ref="Mbatchou 2021"),
+ dict(trait="HDL, LDL, TC, TG", role="Exposure", anc="European", cohort="Global Lipids Genetics Consortium",
+      acc="no accession; GLGC 2021 ancestry-specific (European) release, csg.sph.umich.edu/willer/public/glgc-lipids2021",
+      n=_n_multi(["HDL", "LDL", "TC", "TG"]), build="hg19", ref="Graham 2021"),
  dict(trait="ApoB", role="Exposure", anc="European", cohort="UK Biobank", acc="GCST90025952", n="435,744", build="hg19/hg38", ref="Barton 2021"),
  # EUR outcomes
  dict(trait="Coronary artery disease", role="Outcome", anc="European", cohort="CARDIoGRAMplusC4D + UKB (Aragam)", acc="GCST90132314", n="181,522 cases / 1,165,690", build="hg19", ref="Aragam 2022"),
  dict(trait="Heart failure", role="Outcome", anc="European", cohort="HERMES (Henry)", acc="GCST90728695", n="139,533 cases", build="hg19", ref="Henry 2025"),
- dict(trait="Stroke", role="Outcome", anc="European", cohort="GIGASTROKE", acc="GCST90104539", n="—", build="hg19", ref="Mishra 2022"),
+ dict(trait="Stroke", role="Outcome", anc="European", cohort="GIGASTROKE", acc="GCST90104539", n="73,652 cases / 1,234,808 controls", build="hg19", ref="Mishra 2022"),
  dict(trait="Type 2 diabetes", role="Outcome", anc="European", cohort="DIAGRAM (Xue)", acc="GCST006867", n="62,892 cases / 596,424", build="hg19", ref="Xue 2018"),
- dict(trait="eGFR", role="Outcome", anc="European", cohort="CKDGen + UKB (Stanzick)", acc="—", n="~1,200,000", build="hg19", ref="Stanzick 2021"),
+ dict(trait="eGFR", role="Outcome", anc="European", cohort="CKDGen + UKB (Stanzick)", acc="GCST90103634", n=_n_cell("eGFR"), build="hg19", ref="Stanzick 2021"),
  dict(trait="Chronic kidney disease", role="Outcome", anc="European", cohort="CKDGen (Wuttke)", acc="GCST008065", n="41,395 cases / 439,303", build="hg19", ref="Wuttke 2019"),
  # EAS exposures / cohorts
- dict(trait="BMI", role="Exposure", anc="East Asian", cohort="Biobank Japan (Akiyama)", acc="GCST004904", n="173,430", build="hg19", ref="Akiyama 2017"),
- dict(trait="SBP, HbA1c, HDL, LDL, TC, TG", role="Exposure", anc="East Asian", cohort="Biobank Japan (Kanai)", acc="NBDC hum0014", n="~160,000", build="hg19", ref="Kanai 2018"),
+ dict(trait="BMI", role="Exposure", anc="East Asian", cohort="Biobank Japan (Akiyama)", acc="GCST004904", n=_n_cell("BMI.eas"), build="hg19", ref="Akiyama 2017"),
+ dict(trait="SBP, HbA1c, HDL, LDL, TC, TG", role="Exposure", anc="East Asian", cohort="Biobank Japan (Kanai)", acc="NBDC hum0014",
+      n=_n_multi([("SBP", "SBP.eas"), ("HbA1c", "HbA1c.eas"), ("HDL", "HDL.eas"),
+                  ("LDL", "LDL.eas"), ("TC", "TC.eas"), ("TG", "TG.eas")]), build="hg19", ref="Kanai 2018"),
  dict(trait="Type 2 diabetes", role="Outcome", anc="East Asian", cohort="AGEN (Spracklen)", acc="GCST010118", n="77,418 cases / 433,540", build="hg19", ref="Spracklen 2020"),
- dict(trait="Coronary artery disease", role="Outcome", anc="East Asian", cohort="Biobank Japan (Ishigaki)", acc="—", n="~29,000 cases", build="hg19", ref="Ishigaki 2020"),
+ dict(trait="Coronary artery disease", role="Outcome", anc="East Asian", cohort="Biobank Japan (Ishigaki)",
+      acc="no accession; Biobank Japan SAIGE release (file BBJ_CAD.txt.gz). The GWAS Catalog entry for this "
+          "publication, GCST90013687, is a larger release (29,319 cases / 183,134 controls) and is NOT the file analysed",
+      n=f"{_EAS_CAD_N:,} (per-SNP N in the shipped file; case count not carried)", build="hg19", ref="Ishigaki 2020"),
  dict(trait="HF", role="Outcome", anc="East Asian", cohort="Biobank Japan", acc="GCST90668009", n="16,251 cases / 197,577 controls", build="hg38", ref="Enzan 2025"),
  dict(trait="Stroke", role="Outcome", anc="East Asian", cohort="GIGASTROKE EAS stratum", acc="GCST90104545", n="19,032 cases / 237,242 controls", build="hg38", ref="Mishra 2022"),
  dict(trait="CKD", role="Outcome", anc="East Asian", cohort="Biobank Japan (cross-population atlas)", acc="GCST90018602", n="2,117 cases / 174,345 controls", build="hg38", ref="Sakaue 2021"),
  dict(trait="BMI, SBP, lipids, HbA1c, T2D, CAD, HF, stroke, CKD", role="Exposure / Outcome", anc="East Asian (Taiwan)", cohort="Taiwan Precision Medicine Initiative (TPMI)", acc="controlled access", n="hospital-based", build="hg38", ref="TPMI data-access statement"),
- dict(trait="BMI, waist, DM, lipids, SBP, HbA1c", role="Exposure / Outcome", anc="East Asian (Korea)", cohort="KoGES (population)", acc="controlled access", n="~211,000", build="hg19", ref="Kim & Han 2017"),
+ # C045(b): "~211,000" was the KoGES cohort-profile total from Kim & Han 2017. The release analysed
+ # here is the KoGES PheWeb GWAS (phenocode-KoGES_*.tsv.gz), whose N is read back from the clumped
+ # instrument files the analysis used.
+ dict(trait="BMI, waist, DM, lipids, SBP, HbA1c", role="Exposure / Outcome", anc="East Asian (Korea)",
+      cohort="KoGES (population); PheWeb GWAS release analysed", acc="controlled access",
+      n=f"{_KOGES_N:,}", build="hg19", ref="Kim & Han 2017"),
+ dict(trait="Waist circumference", role="Outcome (no-overlap population comparator)", anc="East Asian (Taiwan)", cohort="Taiwan Biobank (population)", acc="controlled access", n="80,465", build="hg38", ref="Taiwan Biobank data-access statement"),
  # UKB-free sensitivity outcomes
- dict(trait="Coronary artery disease", role="Sensitivity outcome (UKB-free)", anc="European", cohort="CARDIoGRAMplusC4D (1000G)", acc="ieu-a-7", n="60,801 cases / 184,305", build="hg19", ref="Nikpay 2015"),
- dict(trait="Heart failure", role="Sensitivity outcome (UKB-free)", anc="European", cohort="HERMES (no UKB)", acc="—", n="47,309 cases", build="hg19", ref="Shah 2020"),
- dict(trait="Stroke", role="Sensitivity outcome (UKB-free)", anc="European", cohort="MEGASTROKE (no UKB)", acc="GCST005838", n="40,585 cases / 446,696", build="hg19", ref="Malik 2018"),
- dict(trait="eGFR", role="Sensitivity outcome (UKB-free)", anc="European", cohort="CKDGen 2016", acc="GCST003372", n="—", build="hg19", ref="Pattaro 2016"),
- dict(trait="Type 2 diabetes", role="Sensitivity outcome (UKB-free)", anc="European", cohort="DIAMANTE (no UKB)", acc="—", n="74,124 cases", build="hg19", ref="Mahajan 2018"),
- dict(trait="CAD, HF, T2D", role="Sensitivity outcome (independent)", anc="European", cohort="FinnGen R12", acc="—", n="—", build="hg19", ref="Kurki 2023"),
+ dict(trait="Coronary artery disease", role="Sensitivity outcome (UKB-free)", anc="European", cohort="CARDIoGRAMplusC4D (1000G)",
+      acc="ieu-a-7",
+      n=f"60,801 cases / 123,504 controls ({_CARDIO_N[2]:,.0f} total)",
+      build="hg19", ref="Nikpay 2015"),
+ # C048(c). The three rows below printed the case counts of the FULL (UK-Biobank-inclusive) releases.
+ # What the UKB-free files carry is a sample size per SNP, and for HERMES it varies; the case counts
+ # are not in these releases at all, so they are not asserted here.
+ dict(trait="Heart failure", role="Sensitivity outcome (UKB-free)", anc="European", cohort="HERMES (no UKB)",
+      acc="no accession; HERMES UK-Biobank-free release (file HF_HERMES_noUKB.tsv.gz)",
+      n=f"per-SNP N: median {_HERMES_N[1]:,.0f} (range {_HERMES_N[0]:,.0f}–{_HERMES_N[2]:,.0f}); "
+        f"case count not carried in the release file",
+      build="hg19", ref="Shah 2020"),
+ dict(trait="Stroke", role="Sensitivity outcome (UKB-free)", anc="European", cohort="MEGASTROKE (no UKB)", acc="GCST005838",
+      n=f"{float(_MEGA_META['TotalCases']):,.0f} cases / {float(_MEGA_META['TotalControls']):,.0f} controls "
+        f"({_MEGA_N[2]:,.0f} total)",
+      build="hg19", ref="Malik 2018"),
+ dict(trait="eGFR", role="Sensitivity outcome (UKB-free)", anc="European", cohort="CKDGen 2016", acc="GCST003372",
+      n=f"{float(_CKDGEN_META['TotalControls']):,.0f} (continuous trait; source-file total)",
+      build="hg19", ref="Pattaro 2016"),
+ dict(trait="Type 2 diabetes", role="Sensitivity outcome (UKB-free)", anc="European", cohort="DIAMANTE (no UKB)",
+      acc="no accession; DIAMANTE UK-Biobank-free release (file T2D_Mahajan_noUKB_rsid.txt)",
+      n=f"{_MAHAJAN_N[2]:,.0f} total (constant N assigned at extraction; the release file carries no "
+        f"sample-size column, and no case count)",
+      build="hg19", ref="Mahajan 2018"),
+ dict(trait="CAD, HF, T2D", role="Sensitivity outcome (independent)", anc="European", cohort="FinnGen R12 (endpoints I9_CHD, I9_HEARTFAIL, T2D)",
+      acc="no accession; FinnGen R12 public release, r12.finngen.fi",
+      n=f"{_FINNGEN_N[2]:,.0f} (R12 data-freeze total; endpoint-specific effective N not used)",
+      build="hg19", ref="Kurki 2023"),
 ]
+# The MEGASTROKE cases+controls in the VCF header must reconcile with the per-SNP N the pipeline
+# read, and the GIGASTROKE cell must reconcile with the constant lib_formats assigns to that node:
+# a hand-typed count that does not add up is exactly the class this table shipped.
+assert float(_MEGA_META["TotalCases"]) + float(_MEGA_META["TotalControls"]) == _MEGA_N[2], (
+    "S1: MEGASTROKE VCF cases+controls (%s+%s) != the per-SNP N used (%s)"
+    % (_MEGA_META["TotalCases"], _MEGA_META["TotalControls"], _MEGA_N[2]))
+# The CARDIoGRAM GWAS-VCF carries no TotalCases/TotalControls (the IEU record types it "Continuous"),
+# so the published split is reconciled against the per-SNP N the pipeline read instead.
+assert 60801 + 123504 == _CARDIO_N[2], (
+    "S1: the CARDIoGRAM case/control split no longer sums to the per-SNP N in the shipped file (%s)"
+    % _CARDIO_N[2])
+assert 73652 + 1234808 == _instrument_n("Stroke.clumped.tsv"), (
+    "S1: the GIGASTROKE case/control counts (GWAS Catalog GCST90104539) no longer sum to the N the "
+    "pipeline assigns to the Stroke node (%s)" % _instrument_n("Stroke.clumped.tsv"))
 ws1 = write_sheet(wb, "S1_data_sources",
     "Table S1 | GWAS data sources. Exposure and outcome summary statistics used to construct the European and East "
-    "Asian CKM networks and the UK-Biobank-free sensitivity analysis. Sample sizes are shown where unambiguous; full "
-    "details are in the cited reference. '—' indicates not separately tabulated here (see reference/accession).",
+    "Asian CKM networks and the UK-Biobank-free sensitivity analysis. Every source carries either a repository "
+    "accession or an explicit statement that no accession exists, with the distribution route named. Sample sizes "
+    "for the UK-Biobank-free sensitivity providers are the per-SNP sample sizes carried by the files actually "
+    "analysed, which are the UK-Biobank-free subsets and therefore smaller than the case counts reported for the "
+    "full releases in the cited papers.",
     S1_COLS, S1_ROWS,
-    note="TPMI and KoGES are available under controlled access. Reference keys map to the reference list in the manuscript References section.")
+    note="TPMI, Taiwan Biobank and KoGES are available under controlled access. Reference keys map to the reference "
+         "list in the manuscript References section. Two provenance notes. (i) The European HbA1c exposure file is "
+         "GWAS Catalog GCST90014006, a UK Biobank HbA1c GWAS (Mbatchou 2021), not a MAGIC release: the accession, "
+         "cohort and sample size in this row are taken from the file the pipeline loads, and the HbA1c exposure "
+         "therefore shares UK Biobank participants with the UK-Biobank-containing outcomes. (ii) The East Asian "
+         "coronary file is a Biobank Japan SAIGE release whose per-SNP N differs from the GWAS Catalog entry for the "
+         "same publication, so no accession is claimed for it.")
 ws1.column_dimensions["A"].width = 26; ws1.column_dimensions["D"].width = 30
 ws1.column_dimensions["E"].width = 20; ws1.column_dimensions["F"].width = 20; ws1.column_dimensions["H"].width = 22
 
@@ -274,30 +553,72 @@ def add_i2(rows):
         except (TypeError, ValueError):
             r["I2"] = None
     return rows
+
+
+def add_bh_q(rows, pkey="ivw_p", qkey="bh_q"):
+    """Attach the Benjamini-Hochberg adjusted P to each row, over this table's own P column."""
+    qs, m = bh_q([to_num(r.get(pkey)) if isinstance(to_num(r.get(pkey)), float) else None
+                  for r in rows])
+    for r, q in zip(rows, qs):
+        r[qkey] = q
+    return rows, m
+
+
+_S2_ROWS, _S2_M = add_bh_q(add_i2(read_csv("forward_local_edges.csv")))
+assert _S2_M == len(_S2_ROWS) == 132, \
+    "S2: the BH family must be the full 132-edge table (got %d P-values over %d rows)" % (_S2_M, len(_S2_ROWS))
+_S2_BONF = 0.05 / _S2_M
+_S2_N_BONF = sum(1 for r in _S2_ROWS if isinstance(to_num(r.get("ivw_p")), float)
+                 and to_num(r["ivw_p"]) < _S2_BONF)
+_S2_N_Q05 = sum(1 for r in _S2_ROWS if isinstance(r.get("bh_q"), float) and r["bh_q"] < 0.05)
 write_sheet(wb, "S2_EUR_network",
     "Table S2 | Full European-ancestry bidirectional MR network: all 132 directed exposure–outcome edges. "
     "IVW is the primary estimate; MR-Egger, weighted median, Egger intercept, Cochran Q, the derived "
-    "heterogeneity I² = (Q − df)/Q, and liability-scale Steiger direction are reported for each edge. Effect "
+    "heterogeneity I² = (Q − df)/Q, the Benjamini–Hochberg adjusted P (q) over this table, and liability-scale "
+    "Steiger direction are reported for each edge. Effect "
     "sizes: per-SD (continuous exposure) or per-log-OR (binary).",
     [("exposure","Exposure","str"),("outcome","Outcome","str"),("nsnp","nSNP","int"),
      ("ivw_b","IVW β","b"),("ivw_se","IVW SE","se"),("ivw_p","IVW P","p"),
+     ("bh_q","BH FDR (q)","p"),
      ("egger_b","Egger β","b"),("egger_p","Egger P","p"),
      ("egger_intercept","Egger int.","b"),("egger_intercept_p","Egger int. P","p"),
      ("wm_b","WM β","b"),("wm_p","WM P","p"),
      ("Q","Cochran Q","b"),("Q_p","Q P","p"),("I2","I² (%)","int"),
      ("steiger_correct","Steiger correct","str"),("steiger_p","Steiger P","p")],
-    add_i2(read_csv("forward_local_edges.csv")),
-    note="Bonferroni threshold for the network = 0.05/132 = 3.8×10⁻⁴. Steiger direction for the network table uses the quantitative-trait approximation; the liability-scale recomputation for the edges carrying directional claims is Table S11. I², heterogeneity index; WM, weighted median.")
+    _S2_ROWS,
+    note="Bonferroni threshold for the network = 0.05/%d = %s. BH FDR (q) is the Benjamini–Hochberg "
+         "step-up adjusted P (scipy.stats.false_discovery_control, method='bh') computed over the IVW P "
+         "column of this table — family size m = %d, the full edge set, so the family is exactly the table "
+         "shown. It is reported because the Methods state that a Benjamini–Hochberg FDR over this table is "
+         "provided as a supplement; no claim in the paper rests on it. %d edges clear the Bonferroni "
+         "threshold and %d have q < 0.05; network membership and the staging graph use the Bonferroni "
+         "threshold alone, and q informs only which findings are labelled exploratory. Steiger direction for "
+         "the network table uses the quantitative-trait approximation; the liability-scale recomputation for "
+         "the edges carrying directional claims is Table S11. I², heterogeneity index; WM, weighted median."
+         % (_S2_M, _sci(_S2_BONF), _S2_M, _S2_N_BONF, _S2_N_Q05))
 
 # ---------- S3: MVMR cascade ----------
+# C019. The caption stated a criterion of "F > 12". The Methods threshold is the conventional 10
+# (Sanderson 2019); 12.2 is the smallest value OBSERVED across these models, not a rule. The two are
+# now separated and the observed minimum is read from the table rather than typed.
+_CASC = read_csv("mvmr_cascade.csv")
+_CASC_F = sorted((float(r["cond_F"]), f"{r['exposure']}->{r['outcome']}")
+                 for r in _CASC if to_num(r.get("cond_F")) is not None
+                 and isinstance(to_num(r.get("cond_F")), float))
+assert _CASC_F, "S3 caption: no conditional F values in mvmr_cascade.csv"
+assert _CASC_F[0][0] > 10, (
+    "S3 caption claims every cascade model clears conditional F = 10, but the minimum is %.2f (%s)"
+    % _CASC_F[0])
 write_sheet(wb, "S3_MVMR_cascade",
     "Table S3 | Multivariable MR adjudicating cascade versus common-driver mechanism. Each disease outcome is "
     "conditioned jointly on its candidate upstream exposures; the direct effect is the MVMR-IVW estimate and the "
-    "total effect is the univariable estimate. Conditional F > 12 indicates adequate conditional instrument strength.",
+    "total effect is the univariable estimate. Conditional instrument strength is judged against the conventional "
+    "threshold of 10 (Sanderson et al. 2019); every model here clears it, the smallest observed value being "
+    "%.1f (%s)." % (_CASC_F[0][0], _CASC_F[0][1]),
     [("model","Model","str"),("outcome","Outcome","str"),("exposure","Exposure","str"),("nsnp","nSNP","int"),
      ("direct_b","Direct β","b"),("direct_se","Direct SE","se"),("direct_p","Direct P","p"),
      ("total_b","Total β","b"),("total_p","Total P","p"),("cond_F","Conditional F","b")],
-    read_csv("mvmr_cascade.csv"),
+    _CASC,
     note="Key contrasts: BMI retains a direct effect on CAD and HF; no CAD-independent T2D→HF effect is detected, and the mediated component is substantial but imprecise and covariance-dependent, so no single proportion is reported (Table S3/mediation); LDL→stroke collapses.")
 
 # ---------- S3b: MVMR robust ----------
@@ -337,6 +658,39 @@ write_sheet(wb, "S4b_CAUSE_negcontrol",
     read_csv("cause_negcontrol_pairs.csv"))
 
 # ---------- S5: staging ledger ----------
+# C049. The ledger's analysis vocabulary calls the two reverse-effect verdicts DISCORDANT and
+# DISCORDANT_CAVEATED. The manuscript calls the same two things "directionally supported reverse
+# association" and "statistically supported but pleiotropy-caveated", and "discordant" invites the
+# reading that the staging order was contradicted, which is the opposite of what these verdicts say
+# (every reverse effect runs from a stage-4 disease back into a stage-2 trait). The workbook is the
+# reader-facing surface, so it is renamed here, once, and applied to BOTH sheets that print a
+# verdict. The analysis CSVs keep the original tokens — main Figure 1 maps them to colours and
+# legend labels — so scripts/verify_rebuttal_r{2,3,4}.py were updated to assert this vocabulary on
+# the workbook and to map the CSV tokens through the same table.
+VERDICT_RENAME = {"DISCORDANT": "REVERSE_SUPPORTED",
+                  "DISCORDANT_CAVEATED": "REVERSE_CAVEATED",
+                  "DISC_CAVEATED": "REVERSE_CAVEATED"}
+
+
+def rename_verdicts(rows, keys):
+    seen = set()
+    for r in rows:
+        for k in keys:
+            if k in r and r[k] in VERDICT_RENAME:
+                r[k] = VERDICT_RENAME[r[k]]
+            if k in r and r[k]:
+                seen.add(r[k])
+    assert not (seen & set(VERDICT_RENAME)), \
+        "verdict rename missed a value: %s" % sorted(seen & set(VERDICT_RENAME))
+    return rows
+
+
+_LEDGER = rename_verdicts(read_csv("staging_ledger_native.csv"), ["verdict"])
+_LEDGER_VC = {}
+for _r in _LEDGER:
+    _LEDGER_VC[_r["verdict"]] = _LEDGER_VC.get(_r["verdict"], 0) + 1
+assert set(_LEDGER_VC) <= {"CONCORDANT", "INDETERMINATE", "REVERSE_SUPPORTED", "REVERSE_CAVEATED"}, \
+    "S5 verdict vocabulary is not the documented one: %s" % sorted(_LEDGER_VC)
 write_sheet(wb, "S5_staging_ledger",
     "Table S5 | Falsifiable staging ledger, adjudicated on NATIVE effect-size scales. "
     "Each of 15 AHA stage transitions is tested against its reverse edge by comparing the reverse 95% confidence "
@@ -352,26 +706,45 @@ write_sheet(wb, "S5_staging_ledger",
      ("rev_units","Rev. units","str"),("rev_bound","Negligibility bound","b"),
      ("rev_steiger_correct","Rev. Steiger","str"),("rev_egger_int_p","Rev. Egger int. P","b"),
      ("evidence_label","Evidence label","str"),("verdict","Verdict","str"),("knife_edge","Borderline","str"),
-     ("legacy_mde","Legacy 80% MDE","b"),("legacy_tost_p","Legacy TOST P","b")],
-    read_csv("staging_ledger_native.csv"),
-    note="Verdicts: 7 concordant, 4 indeterminate, 2 with a genuine reverse effect (HF→T2D, Stroke→T2D) and 2 pleiotropy-caveated (CAD→SBP index-event; CAD→T2D feedback-with-caveat, matching the independent H5 robust suite). All four reverse effects point into a lower-stage trait as feedback or an index-event effect, not reverse stage progression. BMI→Stroke is flagged borderline: its reverse CI limit (+0.0505) sits 0.0005 from the 0.05 SD bound, so that verdict would flip under trivial re-rounding.")
+     ("legacy_mde","80% MDE (reference only)","b"),("legacy_tost_p","Fixed-bound TOST P (reference only)","b")],
+    _LEDGER,
+    note="Verdict vocabulary. CONCORDANT = the reverse 95%% confidence interval lies entirely inside the "
+         "negligibility bound, or the reverse edge is Steiger-wrong-direction (a confounded or index-event "
+         "signal, not reverse causation). INDETERMINATE = the interval spans both zero and the bound, so a "
+         "null and a material reverse effect cannot be separated. REVERSE_SUPPORTED = a directionally "
+         "supported reverse association: the reverse edge excludes zero, exceeds the bound, is "
+         "Steiger-correct and carries no directional pleiotropy. REVERSE_CAVEATED = statistically supported "
+         "but pleiotropy-caveated: as REVERSE_SUPPORTED, except that the reverse edge's MR-Egger intercept "
+         "is non-zero (P < 0.05), so the reverse signal is real while its magnitude is pleiotropy-inflated. "
+         "Counts here: %d concordant, %d indeterminate, %d reverse-supported (HF→T2D, Stroke→T2D) and %d "
+         "reverse-caveated (CAD→SBP index-event; CAD→T2D feedback-with-caveat, consistent with the "
+         "pleiotropy-robust re-estimation of the same reverse edges — a different estimator set on the same "
+         "data, not an independent replication). All four reverse effects point into a lower-stage trait as "
+         "feedback or an index-event effect, not reverse stage progression. BMI→Stroke is flagged "
+         "borderline: its reverse CI limit (+0.0505) sits 0.0005 from the 0.05 SD bound, so that verdict "
+         "would flip under trivial re-rounding. The last two columns are retained for reference only and "
+         "are not used to adjudicate any verdict."
+         % (_LEDGER_VC.get("CONCORDANT", 0), _LEDGER_VC.get("INDETERMINATE", 0),
+            _LEDGER_VC.get("REVERSE_SUPPORTED", 0), _LEDGER_VC.get("REVERSE_CAVEATED", 0)))
 
 # ---------- S5b: staging-ledger bound sensitivity ----------
 # The negligibility bounds in S5 are clinical judgements. This sheet is the answer to "what if you
 # had chosen differently": every verdict across a sweep, produced by scripts/58_ledger_bound_sensitivity.py.
-_bs = read_csv("staging_ledger_bound_sensitivity.csv")
+_bs = rename_verdicts(read_csv("staging_ledger_bound_sensitivity.csv"),
+                      ["very tight", "tight", "PRIMARY", "loose", "very loose"])
 write_sheet(wb, "S5b_ledger_bound_sensitivity",
     "Table S5b | Bound sensitivity of the staging ledger. Each transition's verdict under five negligibility-bound "
     "scenarios, from very tight (odds ratio 1.01 / 0.5 mmHg / 0.02 SD) to very loose (odds ratio 1.20 / 5 mmHg / "
     "0.20 SD); the PRIMARY column is the rule reported in Table S5. The concordant/indeterminate split is "
     "bound-conditional, but the falsification claim is not: under every scenario each reverse effect in the "
-    "discordant family runs from a stage-4 disease into a stage-2 trait, as feedback or an index-event effect, and "
-    "none reverses the staging order.",
+    "REVERSE_SUPPORTED and REVERSE_CAVEATED family runs from a stage-4 disease into a stage-2 trait, as feedback or "
+    "an index-event effect, and none reverses the staging order.",
     [("transition","Transition","str"),
      ("very tight","Very tight","str"),("tight","Tight","str"),("PRIMARY","PRIMARY","str"),
      ("loose","Loose","str"),("very loose","Very loose","str"),
      ("stability","Stability","str")],
-    _bs)
+    _bs,
+    note="Verdict vocabulary is defined in the footnote to Table S5; the same four labels are used here.")
 
 # ---------- S6: cross-ancestry comparison ----------
 write_sheet(wb, "S6_crossanc_edges",
@@ -412,17 +785,109 @@ def merge_meta():
                     "rd_b": rr.get("ivw_b"), "rd_se": rr.get("ivw_se"), "rd_p": rr.get("ivw_p"),
                     "steiger": r.get("steiger")})
     return out
+# C057. The Results now cite Table S7b for the East-Asian meta staging numbers, which live in
+# staging_eas_meta_exact.csv (written by 77_eas_meta_staging_exact.py). They are appended as a
+# separate block rather than retyped into the legend.
+_EASSTAGE = read_csv("staging_eas_meta_exact.csv")
+assert _EASSTAGE, "S7b: staging_eas_meta_exact.csv is empty"
+_EASSTAGE_COLS = [("Meta model", "str"), ("Edges tested", "int"), ("Bonferroni threshold", "p"),
+                  ("Retained edges", "int"), ("Nodes carrying a retained edge", "int"),
+                  ("Cross-stage edges", "int"), ("Forward", "int"), ("Backward", "int"),
+                  ("Concordance", "b"), ("Orderings ≥ observed", "int")]
+_EASSTAGE_ROWS = [[r["variant"], r["edges_meta"], r["bonferroni"], r["retained_edges"], r["nodes"],
+                   r["cross"], r["forward"], r["backward"], r["concordance"], r["perm_ge"]]
+                  for r in _EASSTAGE]
+_EASSTAGE_ROWS2 = [[r["variant"], r["perm_total"], r["exact_p"]] for r in _EASSTAGE]
 write_sheet(wb, "S7b_EAS_meta",
     "Table S7b | Inverse-variance meta-analysis of the two East Asian hospital cohorts (BBJ + TPMI), fixed- and "
-    "random-effects. Fixed-vs-random divergence is reported because high-heterogeneity edges are borderline at "
-    "Bonferroni (e.g. T2D→BMI).",
+    "random-effects, and the staging result the meta networks support. Fixed-vs-random divergence is reported "
+    "because high-heterogeneity edges are borderline at Bonferroni (e.g. T2D→BMI).",
     [("exposure","Exposure","str"),("outcome","Outcome","str"),("nsnp","nSNP","int"),
      ("fx_b","Fixed β","b"),("fx_se","Fixed SE","se"),("fx_p","Fixed P","p"),
      ("rd_b","Random β","b"),("rd_se","Random SE","se"),("rd_p","Random P","p"),
      ("steiger","Steiger correct","str")],
-    merge_meta())
+    merge_meta(),
+    blocks=[("Staging result for the two East Asian meta networks (exact enumerated null)",
+             _EASSTAGE_COLS, _EASSTAGE_ROWS),
+            ("Exact permutation null for the same two networks",
+             [("Meta model", "str"), ("Distinct stage orderings enumerated", "int"),
+              ("Exact P", "b")], _EASSTAGE_ROWS2)],
+    note="Concordance is the fraction of cross-stage retained edges pointing forward in stage order. The null is "
+         "ENUMERATED, not sampled: every distinct assignment of stage labels to the nodes that carry a retained "
+         "edge is scored, so the exact P is the proportion of those orderings whose concordance is at least the "
+         "observed one. The two meta networks retain different edge sets, hence different node counts and "
+         "different enumeration sizes.")
 
 # ---------- S8: triangulation ----------
+# C044. The footnote and Supplementary Methods 9 both promise weighted median, weighted mode,
+# penalised weighted median, radial IVW and leave-one-locus-out for the population KoGES edge, plus a
+# no-overlap Taiwan Biobank waist comparator. The sheet shipped IVW/WM/Egger only. Every value below
+# is PARSED from the analysis output that produced it; nothing is typed.
+_H4 = io.open(os.path.join(RES, "h4_leandiabetes.txt"), encoding="utf-8").read()
+_TRI = io.open(os.path.join(RES, "triangulation_summary.txt"), encoding="utf-8").read()
+
+_m = re.search(r"Population KoGES DM->BMI:\s*(\d+)\s+harmonised instruments", _H4)
+assert _m, "S8: cannot read the KoGES DM->BMI instrument count from h4_leandiabetes.txt"
+_KOGES_NSNP = int(_m.group(1))
+
+def _h4_est(label):
+    m = re.search(r"^\s*" + re.escape(label) + r"\s+b=([-+\d.eE]+)\s+se=([-+\d.eE]+)\s+p=([-+\d.eE]+)",
+                  _H4, re.M)
+    assert m, f"S8: estimator '{label}' not found in h4_leandiabetes.txt"
+    return m.group(1), m.group(2), m.group(3)
+
+_m = re.search(r"^Effect \(Mod\.2nd\)\s+([-+\d.eE]+)\s+([-+\d.eE]+)\s+[-+\d.eE]+\s+([-+\d.eE]+)",
+               _H4, re.M)
+assert _m, "S8: radial-IVW (Mod.2nd) line not found in h4_leandiabetes.txt"
+_RADIAL = _m.groups()
+
+_m = re.search(r"KoGES-DM->TWB-Waist\s+\S+\s+\S+\s+(\d+)\s+([-+\d.]+)\s+([\d.eE+-]+)\s+"
+               r"([-+\d.]+)\s+([\d.eE+-]+)", _TRI)
+assert _m, "S8: the KoGES-DM -> Taiwan-Biobank-waist comparator row is not in triangulation_summary.txt"
+_TWB = _m.groups()          # nsnp, ivw_b, ivw_p, wm_b, wm_p
+
+_S8_EST_COLS = [("Estimator", "str"), ("Edge", "str"), ("nSNP", "int"),
+                ("Estimate (β)", "b"), ("SE", "se"), ("P", "p"), ("Note", "str")]
+_KEDGE = "KoGES_DM→KoGES_BMI"
+_S8_EST_ROWS = []
+for _lbl, _disp in [("Inverse variance weighted", "Inverse-variance weighted (primary)"),
+                    ("MR Egger", "MR-Egger"),
+                    ("Weighted median", "Weighted median"),
+                    ("Weighted mode", "Weighted mode"),
+                    ("Penalised weighted median", "Penalised weighted median")]:
+    _b, _se, _p = _h4_est(_lbl)
+    _S8_EST_ROWS.append([_disp, _KEDGE, _KOGES_NSNP, _b, _se, _p, ""])
+_S8_EST_ROWS.append(["Radial IVW (modified 2nd-order weights)", _KEDGE, _KOGES_NSNP,
+                     _RADIAL[0], _RADIAL[1], _RADIAL[2], "7 radial Q-outliers flagged"])
+# h4_leandiabetes.txt prints P to four decimals, so two estimators come back as "0.0000". Printing a
+# P of exactly zero in a published table is false. The weighted-median P exists at full precision in
+# the canonical triangulation table, so read it from there; the penalised weighted median has no
+# full-precision source anywhere in results/, so it is reported as a bound rather than invented.
+_KTRI = next(r for r in read_csv("koges_triangulation.csv")
+             if r["exposure"] == "KoGES_DM" and r["outcome"] == "KoGES_BMI")
+for _row in _S8_EST_ROWS:
+    if _row[0] == "Weighted median" and _row[1] == _KEDGE:
+        assert abs(float(_row[3]) - float(_KTRI["wm_b"])) < 5e-4, \
+            "S8: the weighted-median estimate disagrees between h4_leandiabetes.txt and koges_triangulation.csv"
+        _row[3], _row[5] = _KTRI["wm_b"], _KTRI["wm_p"]
+    elif float(_row[5]) == 0.0:
+        _row[5] = "< 0.0001"
+        _row[6] = (_row[6] + "; " if _row[6] else "") + "P below the precision of the deposited output"
+_S8_EST_ROWS.append(["Inverse-variance weighted", "KoGES_DM→TWB_WAIST", _TWB[0], _TWB[1], "", _TWB[2],
+                     "Taiwan Biobank population comparator; no sample overlap with KoGES"])
+_S8_EST_ROWS.append(["Weighted median", "KoGES_DM→TWB_WAIST", _TWB[0], _TWB[3], "", _TWB[4],
+                     "Taiwan Biobank population comparator; MC4R instrument absent"])
+
+_LOO = re.findall(r"^\s*drop (rs\d+)\s+b=([-+\d.eE]+)\s+p=([-+\d.eE]+)", _H4, re.M)
+assert len(_LOO) == _KOGES_NSNP, \
+    "S8: %d leave-one-out rows for %d instruments" % (len(_LOO), _KOGES_NSNP)
+_m = re.search(r"LOO range \[([-+\d.]+),\s*([-+\d.]+)\]", _H4)
+assert _m, "S8: the leave-one-out range line is not in h4_leandiabetes.txt"
+_LOO_RANGE = _m.groups()
+_S8_LOO_COLS = [("Instrument dropped", "str"), ("Edge", "str"), ("nSNP", "int"),
+                ("IVW β", "b"), ("P", "p")]
+_S8_LOO_ROWS = [[s, _KEDGE, _KOGES_NSNP - 1, b, p] for s, b, p in _LOO]
+
 write_sheet(wb, "S8_triangulation",
     "Table S8 | Population-vs-hospital triangulation of the diabetes→adiposity (→BMI) edge. Within the "
     "population-based KoGES cohort, DM→BMI/WAIST (population) is compared with the hospital BBJ/TPMI estimates; "
@@ -433,7 +898,20 @@ write_sheet(wb, "S8_triangulation",
      ("egger_b","Egger β","b"),("egger_int","Egger int.","b"),("egger_int_p","Egger int. P","p"),
      ("Q_p","Q P","p"),("meanF","Mean F","b"),("steiger","Steiger correct","str")],
     read_csv("koges_triangulation.csv"),
-    note="DM→BMI IVW point estimate (−0.043) matches the hospital TPMI edge (−0.046): the edge does not vanish in a population cohort, so it is not a demonstrable ascertainment artifact; a causal effect is not established (IVW-random null, balanced pleiotropy). Robust suite: pleiotropy-robust estimators (weighted median −0.090, weighted mode −0.102, penalised weighted median, radial IVW) stay negative, while the conservative two-cohort Hartung–Knapp meta-analysis is non-significant (95% CI [−0.40, +0.26], P = 0.22; k = 2, I² = 0.76). The forward BMI→DM positive control is intact.")
+    blocks=[("Robust-estimator suite for the population KoGES DM→BMI edge, and the no-overlap "
+             "Taiwan Biobank waist comparator (Supplementary Methods 9)", _S8_EST_COLS, _S8_EST_ROWS),
+            ("Leave-one-locus-out: IVW re-estimated dropping each KoGES DM instrument in turn",
+             _S8_LOO_COLS, _S8_LOO_ROWS)],
+    note="DM→BMI IVW point estimate (−0.043) matches the hospital TPMI edge (−0.046): the edge does not vanish "
+         "in a population cohort, so it is not a demonstrable ascertainment artifact; a causal effect is not "
+         "established (IVW-random null, balanced pleiotropy). The pleiotropy-robust estimators in the block above "
+         "stay negative, while the conservative two-cohort Hartung–Knapp meta-analysis is non-significant "
+         "(95%% CI [−0.40, +0.26], P = 0.22; k = 2, I² = 0.76). Leave-one-locus-out does not flip the sign: the "
+         "IVW estimate ranges over [%s, %s] across the nine single-instrument drops, and the two adiposity loci "
+         "(MC4R rs6567160, 12q24 rs2074356) are the drops that move it most negative. Estimator standard errors "
+         "are not reported for the Taiwan Biobank comparator because the deposited summary does not carry them. "
+         "The forward BMI→DM positive control is intact."
+         % (_LOO_RANGE[0], _LOO_RANGE[1]))
 
 # ---------- S9: ApoB MVMR ----------
 write_sheet(wb, "S9_ApoB_MVMR",
@@ -448,15 +926,32 @@ write_sheet(wb, "S9_ApoB_MVMR",
     read_csv("mvmr_apob.csv") + read_csv("mvmr_lipid_fulldensity.csv"))
 
 # ---------- S10: standardisation ----------
+# C046. "Comparable" was computed from the EXPOSURE units alone, so 16 edges whose OUTCOME is HbA1c
+# or eGFR were flagged comparable here while Table S15 and the Methods declare those two traits
+# readable on sign only. The rule now requires BOTH sides (scripts/14_standardise.py) and the column
+# says which quantity it is about.
+_STD = read_csv("edges_standardised.csv")
+_STD_BAD = [r["edge"] for r in _STD
+            if str(r.get("comparable")) == "True" and (r["exposure"] in ("HbA1c", "eGFR")
+                                                       or r["outcome"] in ("HbA1c", "eGFR"))]
+assert not _STD_BAD, (
+    "S10: %d edges are still flagged magnitude-comparable although HbA1c/eGFR is on one side "
+    "(Table S15 calls those sign-only). Re-run 14_standardise.py. Offenders: %s"
+    % (len(_STD_BAD), _STD_BAD[:8]))
 write_sheet(wb, "S10_standardised",
     "Table S10 | Cross-ancestry scale standardisation. Effect sizes on native and per-SD scales; only SBP required "
     "rescaling (EUR per-mmHg → per-SD, SD = 19.3 mmHg), computed from the full-precision IVW estimate rather than "
-    "the rounded native value shown. HbA1c and eGFR were flagged non-comparable rather than rescaled.",
+    "the rounded native value shown. Magnitudes are comparable only where BOTH the exposure and the outcome are on "
+    "a common scale in the two ancestries: HbA1c and eGFR are read on sign concordance alone (Table S15), so every "
+    "edge with either trait on either side is flagged not magnitude-comparable rather than rescaled.",
     [("edge","Edge","str"),("exp_units_eur","EUR units","str"),("exp_units_eas","EAS units","str"),
      ("out_units","Outcome units","str"),("EUR_b","EUR β (native)","b"),("EAS_b","EAS β (native)","b"),
      ("EUR_b_perSD","EUR β (per-SD)","b"),("EAS_b_perSD","EAS β (per-SD)","b"),
-     ("comparable","Comparable","str"),("scale_note","Note","str")],
-    read_csv("edges_standardised.csv"))
+     ("comparable","Magnitude-comparable (exposure and outcome)","str"),("scale_note","Note","str")],
+    _STD,
+    note="A 'False' in the magnitude-comparable column does not mean the edge is uninformative: direction "
+         "concordance is still read for every edge (Table S6). It means only that the two effect sizes are on "
+         "different scales, so their ratio or difference carries no interpretation.")
 
 # ---------- S11: Steiger + PRESSO ----------
 write_sheet(wb, "S11_Steiger",
@@ -535,12 +1030,22 @@ NET12_COLS = [("exposure","Exposure","str"),("outcome","Outcome","str"),("nsnp",
     ("wm_b","WM β","b"),("Q","Cochran Q","b"),("Q_p","Q P","p")]
 
 # ---------- S13: binary CKD node ----------
+# C017. The caption put HF→CKD in the same "robust" tier as BMI→CKD and SBP→CKD. Its IVW P does not
+# clear the network Bonferroni threshold (0.05/132), so it is demoted to nominal and the P is read
+# from the sheet's own source file rather than described.
+_CKDN = read_csv("network_ckd.csv")
+_HFCKD = next(r for r in _CKDN if r["exposure"] == "HF" and r["outcome"] == "CKD")
+assert float(_HFCKD["ivw_p"]) > _S2_BONF, \
+    "S13 caption calls HF→CKD nominal, but its IVW P now clears the network Bonferroni threshold"
 write_sheet(wb, "S13_CKD_node",
     "Table S13 | Binary chronic-kidney-disease (CKD) node (Wuttke 2019, GCST008065), a kidney-damage endpoint "
-    "distinct from the quantitative eGFR node. Risk-factor→CKD edges fall in graded tiers: robust (BMI, SBP, HF: "
-    "IVW and weighted median significant, clean Egger intercept) versus pleiotropy-suspect (HDL, TG: weighted median "
-    "null, significant Egger intercept). CKD→cardiovascular edges are null but underpowered (~24 instruments).",
-    NET16_COLS, read_csv("network_ckd.csv"),
+    "distinct from the quantitative eGFR node. Risk-factor→CKD edges fall in graded tiers: robust (BMI, SBP: "
+    "IVW and weighted median significant past the network Bonferroni threshold, clean Egger intercept); nominal "
+    "(HF: IVW P = %s, above the network Bonferroni threshold of %s, with a concordant weighted median but only "
+    "%s instruments); and pleiotropy-suspect (HDL, TG: weighted median null, significant Egger intercept). "
+    "CKD→cardiovascular edges are null but underpowered (~24 instruments)."
+    % ("%.3f" % float(_HFCKD["ivw_p"]), _sci(_S2_BONF), _HFCKD["nsnp"]),
+    NET16_COLS, _CKDN,
     # Round 5. The fourth surface of the stale main-figure class: old main Figure 5 became
     # Supplementary Figure S6 in the 2026-07-25 migration, whose rewrite touched .md sources only.
     # This is a Python string inside a workbook note — a surface no rewrite and, until Gate F21 was
@@ -554,7 +1059,7 @@ S14_ROWS = [
  dict(item="BMI (Yengo 2018)", role="Exposure", anc="EUR", overlap="Yes (GIANT+UKB)", note="Exposure-side UKB overlap remains after the outcome-side sensitivity."),
  dict(item="SBP (Evangelou 2018)", role="Exposure", anc="EUR", overlap="Yes (UKB+ICBP)", note="Exposure-side UKB overlap remains."),
  dict(item="Lipids (GLGC 2021)", role="Exposure", anc="EUR", overlap="Yes (meta includes UK Biobank)", note="Exposure-side; the outcome-side UKB-free sensitivity (Table S12) is independent of the lipid exposure GWAS."),
- dict(item="HbA1c (Chen 2021, MAGIC)", role="Exposure", anc="EUR", overlap="Exposure-side", note="HbA1c enters only as an exposure; its UK Biobank status does not affect the outcome-side UKB-free sensitivity (Table S12)."),
+ dict(item="HbA1c (Mbatchou 2021, UK Biobank, GCST90014006)", role="Exposure", anc="EUR", overlap="Exposure-side", note="The European HbA1c exposure is a UK Biobank GWAS, so HbA1c edges into UK-Biobank-containing outcomes carry exposure-side overlap, as BMI and SBP do. The outcome-side UKB-free sensitivity analysis (Table S12) is unaffected; exposure-side overlap remains a stated limitation."),
  dict(item="T2D (Xue 2018, GCST006867)", role="Exposure/Outcome", anc="EUR", overlap="Yes (DIAGRAM+UKB)", note="Both roles include UKB."),
  dict(item="CAD (Aragam 2022)", role="Outcome", anc="EUR", overlap="Yes", note="UKB-free provider = CARDIoGRAM (Nikpay 2015) + FinnGen R12 (S12)."),
  dict(item="HF (HERMES/Henry 2025)", role="Outcome", anc="EUR", overlap="Yes", note="UKB-free provider = HERMES-noUKB (Shah 2020) + FinnGen (S12)."),
@@ -581,7 +1086,7 @@ S15_ROWS = [
  dict(trait="BMI", eur="Yengo 2018, per-SD", eas="BBJ Akiyama 2017, rank-inverse-normal (≈per-SD)", cmp="Yes"),
  dict(trait="SBP", eur="Evangelou 2018, per-mmHg", eas="BBJ Kanai 2018, rank-inverse-normal (≈per-SD)", cmp="Only after conversion (EUR ×19.3 mmHg → per-SD)"),
  dict(trait="LDL / HDL / TC / TG", eur="GLGC 2021, per-SD", eas="BBJ Kanai 2018, rank-inverse-normal (≈per-SD)", cmp="Yes"),
- dict(trait="HbA1c", eur="Chen 2021 (MAGIC), %-HbA1c units", eas="BBJ Kanai 2018, rank-inverse-normal", cmp="No — sign only"),
+ dict(trait="HbA1c", eur="Mbatchou 2021 (UK Biobank, GCST90014006)", eas="BBJ Kanai 2018, rank-inverse-normal", cmp="No — sign only (the two releases are not on a declared common scale)"),
  dict(trait="eGFR", eur="Stanzick 2021, log(eGFR) per-SD", eas="BBJ Kanai 2018, rank-inverse-normal", cmp="No — sign only"),
  dict(trait="T2D (as exposure)", eur="Xue 2018, log-odds ratio", eas="AGEN Spracklen 2020, log-odds ratio", cmp="Yes"),
  dict(trait="CAD / HF / Stroke / CKD (outcomes)", eur="observed-scale log-odds ratio", eas="observed-scale log-odds ratio", cmp="Yes"),
@@ -616,6 +1121,20 @@ write_sheet(wb, "S16_CAC_node",
     note="The 9p21 lead rs4977575 is dropped as an ambiguous palindrome, leaving CAC→CAD on 5 instruments; dropping this thin edge leaves concordance %s." % _cac_thin["concordance"])
 
 # ---------- S17: non-ischaemic HF subtypes ----------
+# C043. Methods and Supplementary Methods 2 both cite Table S17 for the FORMAL between-subtype
+# heterogeneity test (difference, Q, and P across five assumed correlations). The sheet held only
+# the per-edge IVW/Egger/WM rows; the test itself sat unrendered in hf_subtype_heterogeneity.csv.
+_HET = read_csv("hf_subtype_heterogeneity.csv")
+assert _HET, "S17: hf_subtype_heterogeneity.csv is empty"
+_RHOS = [k for k in _HET[0] if k.startswith("p_rho_")]
+assert _RHOS == ["p_rho_0.00", "p_rho_0.05", "p_rho_0.10", "p_rho_0.25", "p_rho_0.50"], \
+    "S17: the rho grid in hf_subtype_heterogeneity.csv changed: %s" % _RHOS
+_HET_COLS = ([("Exposure", "str"), ("HFpEF β", "b"), ("HFpEF SE", "se"),
+              ("HFrEF β", "b"), ("HFrEF SE", "se"), ("Difference (HFpEF − HFrEF)", "b")]
+             + [("P, ρ = %s" % k.split("_")[-1], "p") for k in _RHOS]
+             + [("Cochran Q", "b")])
+_HET_ROWS = [[r["exposure"], r["b_hfpef"], r["se_hfpef"], r["b_hfref"], r["se_hfref"], r["diff"]]
+             + [r[k] for k in _RHOS] + [r["Q"]] for r in _HET]
 write_sheet(wb, "S17_HF_subtypes",
     "Table S17 | All-aetiology heart-failure subtypes (Enzan 2025, PMID 41184235; HFpEF GCST90654629, HFrEF "
     "GCST90654628). All-aetiology subtype outcomes are used because definitions excluding ischaemic "
@@ -628,16 +1147,36 @@ write_sheet(wb, "S17_HF_subtypes",
     "predominantly European instruments act on a ~42%-East-Asian sample, which limits interpretation of magnitude; "
     "edges are read on direction, not magnitude, and the EAS component overlaps the Biobank Japan HF outcome used elsewhere.",
     NET12_COLS, read_csv_at(os.path.join(BASE, "results", "network_hfsubtypes_allcause.csv")),
-    note="T2D->HFrEF is IVW-positive but attenuates under weighted-median (~0.046) and MR-Egger (~0.022); report the direction and range, not a firm magnitude. Full between-subtype heterogeneity tests across five assumed correlations are given in the deposited hf_subtype_heterogeneity.csv; rho = 0 is the conservative column because the shared control set induces positive correlation.")
+    blocks=[("Formal between-subtype heterogeneity test (HFpEF versus HFrEF), per exposure: the "
+             "difference in effects, Cochran's Q, and the two-sample P across five assumed "
+             "correlations between the two subtype estimates", _HET_COLS, _HET_ROWS)],
+    note="T2D->HFrEF is IVW-positive but attenuates under weighted-median (~0.046) and MR-Egger (~0.022); report "
+         "the direction and range, not a firm magnitude. The heterogeneity block above is the test the Methods and "
+         "Supplementary Methods 2 cite this table for. The two subtype outcomes share one control set (cases are "
+         "disjoint), which induces a positive correlation between their estimates; because a positive correlation "
+         "SHRINKS the variance of the difference, the rho = 0 column is the conservative test and rho = 0.05 is the "
+         "value implied by the shared controls under the Lin-Sullivan formula. The rho grid is 0, 0.05, 0.10, 0.25 "
+         "and 0.50; Q and its P are computed at rho = 0. A difference significant at rho = 0 therefore holds a "
+         "fortiori, and a non-significant difference does not establish equivalence. Bonferroni over the %d "
+         "exposures tested is 0.05/%d = %s." % (len(_HET), len(_HET), _sci(0.05 / len(_HET))))
 
 # ---------- S18: WHRadjBMI (adiposity distribution) ----------
+# C047. The sheet carried WHRadjBMI->niHF / niHFpEF / niHFrEF rows. Those non-ischaemic heart-failure
+# subtype outcomes are defined nowhere in the package and were RETIRED as circular in an earlier
+# review round (excluding ischaemic cases conditions directly on CAD) — Table S17 uses the
+# all-aetiology subtypes for exactly that reason. Dropped here and from the source CSV. The filter is
+# applied at the generator so a regenerated CSV cannot reintroduce them silently.
+RETIRED_HF_OUTCOMES = {"niHF", "niHFpEF", "niHFrEF"}
+_WHR_ALL = read_csv("network_whradjbmi.csv")
+_WHR = [r for r in _WHR_ALL if r["outcome"] not in RETIRED_HF_OUTCOMES]
+assert _WHR, "S18: every WHRadjBMI row was filtered out"
 write_sheet(wb, "S18_WHRadjBMI",
     "Table S18 | Adiposity distribution independent of overall mass (WHRadjBMI; Pulit 2019, 694,649 European, "
     "combined-sex). Central fat distribution is consistent with a causal effect on CAD and T2D but not on heart "
     "failure: no WHRadjBMI–HF association was detected. Because the exposure is conditioned on BMI and the "
     "estimates are heterogeneous, this does not establish whether overall mass or fat distribution carries the "
     "risk. Steiger filtering was not applied to these edges.",
-    NET12_COLS, read_csv("network_whradjbmi.csv"),
+    NET12_COLS, _WHR,
     note="Two caveats: WHRadjBMI is BMI-adjusted (conditioning on a heritable covariate can induce collider bias, so the null-to-inverse HF association is not read as protective); and WHRadjBMI shares UK Biobank with the CAD, HF and T2D outcomes, so direction is firmer than magnitude.")
 
 # ---------- S19: zero-overlap cross-cohort ----------
@@ -687,7 +1226,7 @@ write_sheet(wb, "S20_Steiger_margins",
     "summed r² by about 3%, far less than any of these margins, so the direction calls are not "
     "conditional on the assumed prevalence.",
     STEIGER_MARGIN_COLS, _marg,
-    note="Margin low/high are the endpoints across the prevalence grid. This analysis is one-sided: it "
+    note="Margin low/high are the endpoints across the prevalence grid; for the 20 continuous-to-continuous edges prevalence cannot enter the calculation, so low = margin = high and they are flagged prevalence-invariant (step 61c). This analysis is one-sided: it "
          "covers edges the quantitative Steiger gate already admitted and cannot recover an edge the "
          "gate wrongly rejected.")
 
@@ -709,7 +1248,7 @@ write_sheet(wb, "S21_SBP_strict_primary",
     "estimates differ between the two extractions — CAD→SBP is +1.48 on the strict set against +1.82 on "
     "the position-only set — and exactly one edge differs in significance status: HDL→SBP sits below the "
     "network Bonferroni threshold on the strict set, giving 58 Bonferroni-significant edges and a "
-    "53-edge Steiger-directed graph. HDL→SBP is intra-stage, "
+    "54-edge Steiger-directed graph. HDL→SBP is intra-stage, "
     "so cross-stage concordance is unchanged at 0.926 (25/27).",
     SBP_STRICT_COLS, read_csv("sbp_strict_mr.csv"),
     note="Position-only estimates are retained as a transparency sensitivity comparator, not as an alternative "
@@ -751,6 +1290,35 @@ wb.properties.description = (
     f"Supplementary Tables S{_ids[0]}–S{_ids[-1]} ({len(wb.sheetnames)} worksheets) for: "
     f"{CANON_TITLE}")
 
+# C103. The Contents sheet is the workbook's index; a hand-maintained index drifts from the book it
+# indexes and nothing noticed. Refuse to save a workbook whose data sheets and Contents rows disagree.
+_DATA_SHEETS = [s for s in wb.sheetnames if s != "Contents"]
+_TOC_SHEETS = [t[0] for t in TOC]
+assert len(_TOC_SHEETS) == len(set(_TOC_SHEETS)), "Contents lists a sheet twice"
+_missing = [s for s in _DATA_SHEETS if s not in _TOC_SHEETS]
+_extra = [s for s in _TOC_SHEETS if s not in _DATA_SHEETS]
+assert not _missing and not _extra, (
+    "Contents does not index the workbook: %d data sheets, %d Contents rows; missing %s; stale %s"
+    % (len(_DATA_SHEETS), len(_TOC_SHEETS), _missing, _extra))
+
 path = os.path.join(OUT, "Supplementary_Tables.xlsx")
 wb.save(path)
+
+# Global rule 8. wb.properties covers dc:creator / cp:lastModifiedBy, but openpyxl also writes
+# docProps/app.xml advertising its own name and version, which is third-party tool provenance in a
+# shipped file. Rewrite that one part in place; everything else in the package is byte-identical.
+import zipfile, shutil, tempfile
+_APP = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">'
+        '<Application>Microsoft Excel</Application><AppVersion>16.0300</AppVersion></Properties>')
+_tmp = tempfile.mktemp(suffix=".xlsx")
+with zipfile.ZipFile(path) as _zin, zipfile.ZipFile(_tmp, "w", zipfile.ZIP_DEFLATED) as _zout:
+    for _it in _zin.infolist():
+        _data = _APP.encode("utf-8") if _it.filename == "docProps/app.xml" else _zin.read(_it.filename)
+        _zout.writestr(_it, _data)
+shutil.move(_tmp, path)
+assert wb.properties.creator == wb.properties.lastModifiedBy == "Bertrand Chin-Ming Tan"
+
 print("wrote", path, "with", len(wb.sheetnames), "sheets:", wb.sheetnames)
+print("Contents indexes all %d data sheets; BH FDR family m=%d; S18 dropped %d retired niHF rows"
+      % (len(_DATA_SHEETS), _S2_M, len(_WHR_ALL) - len(_WHR)))

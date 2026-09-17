@@ -1,8 +1,23 @@
 {
-  "title": "Adiposity-centred causal architecture of cardiovascular–kidney–metabolic traits: a cross-ancestry Mendelian-randomization study of coronary disease and heart failure: analysis code and frozen source data",
+  "title": "Adiposity-centred causal architecture of cardiovascular–kidney–metabolic traits: a cross-ancestry Mendelian randomization study of coronary disease and heart failure: analysis code and frozen source data",
   "upload_type": "software",
   "license": "cc-by-4.0",
   "creators": [
+    {
+      "name": "Nguyen, Son Tung",
+      "affiliation": "Department of Biomedical Sciences, College of Medicine, Chang Gung University, Taoyuan City 33302, Taiwan",
+      "orcid": "0009-0009-7546-7143"
+    },
+    {
+      "name": "Nguyen, Trang Huyen",
+      "affiliation": "Department of Biomedical Sciences, College of Medicine, Chang Gung University, Taoyuan City 33302, Taiwan",
+      "orcid": "0000-0002-4079-7486"
+    },
+    {
+      "name": "Chen, Ko-Ting",
+      "affiliation": "Department of Neurosurgery, Lin-Kou Medical Center, Chang Gung Memorial Hospital, Taoyuan, Taiwan",
+      "orcid": "0000-0002-6795-5974"
+    },
     {
       "name": "Tan, Bertrand Chin-Ming",
       "affiliation": "Department of Biomedical Sciences, College of Medicine, Chang Gung University, Taoyuan City 33302, Taiwan",
@@ -23,5 +38,5 @@
     "coronary artery disease"
   ],
   "access_right": "open",
-  "notes": "[AUTHOR-SUPPLIED — add co-authors with ORCIDs and any grant numbers before releasing.]"
+  "notes": "Funded by the National Science and Technology Council (Taiwan) and Chang Gung Memorial Hospital."
 }

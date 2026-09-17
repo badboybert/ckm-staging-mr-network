@@ -125,8 +125,12 @@ chk("the licence pair is declared (MIT code + CC BY 4.0 data)",
     and "CC BY 4.0" in io.open(os.path.join(REPO, "LICENSE"), encoding="utf-8").read())
 chk("the README states that raw summary statistics are NOT redistributed",
     "not redistributed" in readme and "controlled-access" in readme)
-chk("the deposit still discloses what the author must supply before release",
-    "AUTHOR-SUPPLIED" in json.dumps(zen) and "AUTHOR-SUPPLIED" in readme)
+# Co-authors are now supplied in .zenodo.json (2026-08-14), so the only pre-release item the deposit
+# still discloses is the Zenodo DOI, which cannot exist until the release is archived; it lives in the
+# README. The old check also required AUTHOR-SUPPLIED inside .zenodo.json, which was satisfied only by
+# the co-author placeholder that has legitimately been filled.
+chk("the deposit README still discloses the Zenodo DOI as pending until the release is archived",
+    "AUTHOR-SUPPLIED" in readme)
 for pat, want in ((r"\*\*(\d+)\*\* non-self directed", F["network_edges_total"]),
                   (r"\*\*(\d+)\*\*\s*\n?edges pass", F["edges_passing_bonferroni"])):
     m = re.search(pat, readme)

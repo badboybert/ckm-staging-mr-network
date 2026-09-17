@@ -60,5 +60,5 @@ sf1 <- ggplot(grid, aes(outcome, exposure)) +
         panel.grid = element_blank(),
         legend.key.height = unit(16, "pt"))
 
-save_fig(sf1, "SupplFig1", 178, 165)
+save_fig(sf1, "SupplFig1", 170, 158)
 cat("SF1 done:", nrow(raw), "edges,", sum(grid$sig), "Bonferroni-significant cells\n")

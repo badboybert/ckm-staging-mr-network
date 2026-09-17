@@ -1,0 +1,20 @@
+=== Kidney damage (CKD): every estimate in the package, primary estimator, common scale ===
+SBP per-mmHg -> per-SD conversion: x19.3 (14_standardise.SD_SBP)
+
+exposure source    cohort                                     cases    n   b (native) units       b (per SD)       se          P
+SBP      EUR       CKDGen (Wuttke 2019)                      41,395  437      +0.0145 per mmHg       +0.2808   0.0571   8.98e-07
+SBP      EAS_BBJ   Biobank Japan (Sakaue 2021)                2,117   21      +0.0979 per SD         +0.0979   0.2972   7.42e-01
+SBP      EAS_TPMI  TPMI, within-cohort                       25,906   29      +0.2731 per SD         +0.2731   0.1440   5.79e-02
+SBP      EAS_ZERO  BBJ instruments -> TPMI (zero overlap)    25,906   21      +0.2340 per SD         +0.2340   0.0780   2.70e-03
+BMI      EUR       CKDGen (Wuttke 2019)                      41,395  505      +0.1399 per SD         +0.1399   0.0335   2.97e-05
+BMI      EAS_BBJ   Biobank Japan (Sakaue 2021)                2,117   61      +0.4230 per SD         +0.4230   0.1953   3.04e-02
+BMI      EAS_TPMI  TPMI, within-cohort                       25,906   35      +0.5691 per SD         +0.5691   0.0712   1.30e-15
+BMI      EAS_ZERO  BBJ instruments -> TPMI (zero overlap)    25,906   59      +0.2987 per SD         +0.2987   0.0739   5.30e-05
+
+--- ancestry interaction on the per-SD scale (European vs Biobank Japan, as published) ---
+  SBP->CKD : EUR +0.2808 (0.0571) vs BBJ +0.0979 (0.2972)  z = +0.604  P = 0.546
+  BMI->CKD : EUR +0.1399 (0.0335) vs BBJ +0.4230 (0.1953)  z = -1.428  P = 0.153
+
+  The interaction is the comparison the paper reports; both are far from significant, so the
+  East Asian result is imprecision against a 2,117-case outcome, not a demonstrated
+  ancestry difference - and the larger Taiwanese outcomes above are positive for both edges.

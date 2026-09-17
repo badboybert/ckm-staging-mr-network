@@ -53,8 +53,8 @@ AHA CKM STAGING CONCORDANCE  (population-level causal-ordering test; EXACT label
 ======================================================================================================================
 network                                                       concord.     exact P   backward (AHA-discordant) edges
 ----------------------------------------------------------------------------------------------------------------------
-PRIMARY (UKB-containing outcomes)                                0.926    1.52e-03   [('CAD', 'SBP'), ('CAD', 'T2D')]
-                                                            (exact 3/1980 labelings)
+PRIMARY (UKB-containing outcomes)                                0.926    1.01e-03   [('CAD', 'SBP'), ('CAD', 'T2D')]
+                                                            (exact 2/1980 labelings)
                                                             (132 edges, Bonferroni 0.05/132)
 UKB-free MAIN  (CARDIoGRAM/HERMES/Mahajan/MEGASTROKE/CKDGen)     0.960    7.58e-04   [('CAD', 'SBP')]
                                                             (exact 1/1320 labelings)
@@ -73,7 +73,7 @@ VERDICT:
     removal; 0 attenuate below the bar.
   - 3 headline edges remain NULL in both (SBP->eGFR, BMI->eGFR, HF->T2D) — matching the primary.
   - Staging order stays concordant beyond chance in BOTH UKB-free networks (concordance 0.960, exact P=7.58e-04 [1/1320] MAIN; 0.913, exact P=7.58e-04 [1/1320] FinnGen;
-    primary 0.926, exact P=1.52e-03 [3/1980]). Directional architecture is ROBUST to outcome-side UKB overlap.
+    primary 0.926, exact P=1.01e-03 [2/1980]). Directional architecture is ROBUST to outcome-side UKB overlap.
   - FEEDBACK nuance: CAD->T2D survives in independent FinnGen -> NOT a UKB artifact, but attenuates
     below Bonferroni in Mahajan-noUKB -> partly overlap/power. HF->T2D attenuates in both noUKB
     providers and its Steiger direction flips to FALSE (N_const-sensitive), so it drops from the

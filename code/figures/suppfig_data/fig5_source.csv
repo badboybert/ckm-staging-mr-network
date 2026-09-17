@@ -1,8 +1,12 @@
 panel,row,label,group,b,se,p,source_file
-a,SBP → CKD EUR,SBP → CKD,EUR,+0.0143,0.0017,1.11e-17,results/zheng_ckd.txt
-a,BMI → CKD EUR,BMI → CKD,EUR,+0.1429,0.0286,5.60e-07,results/zheng_ckd.txt
-a,SBP → CKD EAS,SBP → CKD,EAS,+0.0979,0.2240,6.62e-01,results/zheng_ckd.txt
-a,BMI → CKD EAS,BMI → CKD,EAS,+0.4081,0.1440,4.60e-03,results/zheng_ckd.txt
+a,SBP → CKD EUR,SBP → CKD,Europeans (CKDGen),0.280768,0.05715,8.97899711259899e-07,results/network_ckd.csv
+a,SBP → CKD EAS_BBJ,SBP → CKD,East Asians (Biobank Japan),0.097859,0.297186,0.741939961373869,results/renal_eas_primary.csv
+a,SBP → CKD EAS_TPMI,SBP → CKD,East Asians (TPMI),0.273119,0.144029,0.057923315102675,results/network_tpmi_full.csv
+a,SBP → CKD EAS_ZERO,SBP → CKD,East Asians (zero-overlap),0.234035,0.078021,0.00270312300531457,results/network_crosscohort_bbj_tpmi.csv
+a,BMI → CKD EUR,BMI → CKD,Europeans (CKDGen),0.139929,0.033511,2.9710798607834e-05,results/network_ckd.csv
+a,BMI → CKD EAS_BBJ,BMI → CKD,East Asians (Biobank Japan),0.422973,0.195328,0.0303531177691102,results/renal_eas_primary.csv
+a,BMI → CKD EAS_TPMI,BMI → CKD,East Asians (TPMI),0.569109,0.07119,1.30351743520952e-15,results/network_tpmi_full.csv
+a,BMI → CKD EAS_ZERO,BMI → CKD,East Asians (zero-overlap),0.298703,0.073897,5.29632948949773e-05,results/network_crosscohort_bbj_tpmi.csv
 b,BBJ  T2D→BMI (IVW),BBJ  T2D→BMI (IVW),Hospital biobank,-0.0977180946619953,0.0188343154376614,2.122215607778e-07,results/network_eas_edges.csv
 b,TPMI T2D→BMI (IVW),TPMI T2D→BMI (IVW),Hospital biobank,-0.0455554182745269,0.0169227229734513,0.0071031891815979,results/network_tpmi_full.csv
 b,BBJ+TPMI meta (fixed),BBJ+TPMI meta (fixed),Hospital biobank,-0.06885605621388788,0.012587915309901667,4.500034123146057e-08,results/network_eas_meta_fixed.csv

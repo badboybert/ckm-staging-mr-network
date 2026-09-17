@@ -71,6 +71,10 @@ uncited = sorted(k for k in master if k not in seen)
 # --- emit numbered list ---
 out = [f"# Paper 4 — Numbered reference list (Vancouver, by order of appearance)",
        f"_Auto-generated from REFERENCES_MASTER.md + section files. {len(order)} references cited._\n"]
+# Round-7 C115: refcheck.py keys on a "## References" heading, so running it against this file
+# returned "0 entries parsed" - a check that could never fail. The heading makes the shipped list
+# machine-checkable against PubMed, which is the point of generating it.
+out.append("\n## References\n")
 amap = []
 for i, key in enumerate(order, 1):
     r = master[key]

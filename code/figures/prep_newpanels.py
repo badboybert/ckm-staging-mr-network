@@ -66,7 +66,12 @@ f_con, f_p = re.search(r"Drop SBP \+ Stroke:.*?concordance = ([\d.]+)[^;]*; labe
 b_lo, b_hi = re.search(r"Bootstrap 95% CI on concordance.*?\[([\d.]+), ([\d.]+)\]", t, re.S).groups()
 
 check("E2 observed concordance", obs, 0.926, 1e-3)
-check("E2 label-permutation P (exact)", p_lab, 0.0015, 3e-4)
+# 2026-09-16 provenance correction: 0.0015 -> 0.0010. The European HbA1c exposure was found to be
+# GCST90014006 (Mbatchou 2021, UK Biobank, 389,889), not MAGIC/Chen 2021 (146,806); the corrected
+# sample size flips the Steiger call on TG->HbA1c, which joins the graph as a WITHIN-stage edge.
+# The observed cross-stage set is untouched (25/27 = 0.926), but an extra edge changes which edges
+# count as cross-stage under a permuted labelling, so the exact tail moves from 3/1,980 to 2/1,980.
+check("E2 label-permutation P (exact)", p_lab, 0.0010, 3e-4)
 # The degree-preserving null BOUNDS the paper's headline staging claim, so its expectation is read
 # from what the paper actually says rather than typed here. It WAS typed (0.3142). When script 47 was
 # re-run on 2026-07-26 the value moved to 0.2696 and the prose was updated everywhere — Abstract,
@@ -196,6 +201,22 @@ write("fig4_portability.csv", ["stat", "estimate", "lo", "hi", "block", "note"],
 write("fig4_portability_meta.csv", ["stat", "value"],
       [["n_common", n_common], ["n_eur_sig", n_sub], ["k_concordant", k], ["n_tested", n], ["perm_p", perm_p]])
 
+
+
+def _p_sbp_expected():
+    """The SBP->CKD interaction P that renal_contrast.csv supports, recomputed not remembered."""
+    import math as _m
+    _rows = list(csv.DictReader(open(os.path.join(RES, "renal_contrast.csv"), encoding="utf-8")))
+
+    def _a(_s):
+        _r = [x for x in _rows if x["exposure"] == "SBP" and x["source"] == _s]
+        return float(_r[0]["b_perSD"]), float(_r[0]["se_perSD"])
+
+    _e, _k = _a("EUR"), _a("EAS_BBJ")
+    _z = (_e[0] - _k[0]) / _m.sqrt(_e[1] ** 2 + _k[1] ** 2)
+    return _m.erfc(abs(_z) / _m.sqrt(2))
+
+
 # ---------------------------------------------------------------- E6 ancestry interactions (Fig 5)
 t = txt("ancestry_interaction_tests.txt")
 rows = []
@@ -206,7 +227,34 @@ for m in re.finditer(r"^(\S+)\s+([+\-][\d.]+)\(([\d.]+)\)\s+([+\-][\d.]+)\(([\d.
                  float(z), float(p), note.strip()])
 assert rows, "E6 interaction table did not parse"
 d = {r[0]: r for r in rows}
-check("E6 SBP→CKD interaction P", d["SBP→CKD"][6], 0.4315, 1e-4)
+
+# The RENAL rows of this table are superseded. ancestry_interaction_tests.txt predates the round-7
+# re-estimation of the renal edges on the primary pipeline; renal_contrast.csv is the canonical
+# source for SBP->CKD and BMI->CKD, and the manuscript quotes ITS interaction P-values. Recompute
+# those two rows here rather than carrying the old text table's, or 05_source_data ships numbers
+# that contradict the paper (it did: 0.4315/0.0709 against 0.55/0.15).
+# The previous line asserted d["SBP→CKD"][6] == 0.4315, a hard-coded literal -- which made the
+# correct value un-shippable, because regenerating would have failed the build. A check that PINS a
+# claim protects it; this one derives instead.
+import math as _math
+_rc = list(csv.DictReader(open(os.path.join(RES, "renal_contrast.csv"), encoding="utf-8")))
+
+
+def _arm(_exp, _src):
+    _r = [x for x in _rc if x["exposure"] == _exp and x["source"] == _src]
+    assert len(_r) == 1, f"{_exp}/{_src}: {len(_r)} rows in renal_contrast.csv"
+    return float(_r[0]["b_perSD"]), float(_r[0]["se_perSD"])
+
+
+for _exp in ("SBP", "BMI"):
+    _e, _a = _arm(_exp, "EUR"), _arm(_exp, "EAS_BBJ")
+    _z = (_e[0] - _a[0]) / _math.sqrt(_e[1] ** 2 + _a[1] ** 2)
+    _p = _math.erfc(abs(_z) / _math.sqrt(2))
+    _row = d[f"{_exp}→CKD"]
+    _row[1], _row[2], _row[3], _row[4], _row[5], _row[6] = _e[0], _e[1], _a[0], _a[1], _z, _p
+    _row[7] = _row[7].split(" -> ")[0] + " (per-SD, re-estimated on the primary pipeline; renal_contrast.csv)"
+check("E6 SBP→CKD interaction P is the one renal_contrast.csv supports",
+      d["SBP→CKD"][6], _p_sbp_expected(), 1e-3)
 check("E6 TG→LDL interaction P",  d["TG→LDL"][6], 0.0, 1e-4)
 bonf = 0.05 / len(rows)
 for r in rows:

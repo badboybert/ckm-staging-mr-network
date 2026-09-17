@@ -5,16 +5,16 @@ SESOI(equiv)=0.05; reverse power gate = 80%-power MDE (2.80*se_rev) vs |b_fwd|
   BMI  ->CAD    [1->4]  fwd b=+0.387 p=1.3e-43 | rev b= -0.005 p= 8.0e-01 MDE= 0.049 powered      revSt+ -> CONCORDANT X-TYPE
   BMI  ->HF     [1->4]  fwd b=+0.525 p=3.4e-153 | rev b= +0.229 p= 1.5e-01 MDE= 0.448 powered      revSt- -> CONCORDANT X-TYPE
   BMI  ->Stroke [1->4]  fwd b=+0.151 p=1.3e-09 | rev b= +0.015 p= 3.9e-01 MDE= 0.050 powered      revSt+ -> CONCORDANT X-TYPE
-  SBP  ->CAD    [2->4]  fwd b=+0.034 p=9.1e-45 | rev b= +1.819 p= 6.7e-10 MDE= 0.826 UNDERPOWERED revSt+ -> DISCORDANT_PLEIOTROPIC X-TYPE
-  SBP  ->HF     [2->4]  fwd b=+0.020 p=1.7e-37 | rev b= +1.559 p= 1.9e-02 MDE= 1.859 UNDERPOWERED revSt- -> CONCORDANT X-TYPE
-  SBP  ->Stroke [2->4]  fwd b=+0.027 p=1.2e-51 | rev b= +1.918 p= 5.4e-02 MDE= 2.787 UNDERPOWERED revSt- -> CONCORDANT X-TYPE
+  SBP  ->CAD    [2->4]  fwd b=+0.034 p=9.1e-45 | rev b= +1.481 p= 1.1e-07 MDE= 0.782 UNDERPOWERED revSt+ -> DISCORDANT_PLEIOTROPIC X-TYPE
+  SBP  ->HF     [2->4]  fwd b=+0.020 p=1.7e-37 | rev b= +1.941 p= 5.9e-03 MDE= 1.977 UNDERPOWERED revSt- -> CONCORDANT X-TYPE
+  SBP  ->Stroke [2->4]  fwd b=+0.027 p=1.2e-51 | rev b= +1.772 p= 8.5e-02 MDE= 2.879 UNDERPOWERED revSt- -> CONCORDANT X-TYPE
   LDL  ->CAD    [2->4]  fwd b=+0.511 p=3.1e-53 | rev b= +0.246 p= 8.4e-07 MDE= 0.140 powered      revSt- -> CONCORDANT X-TYPE
   LDL  ->HF     [2->4]  fwd b=+0.121 p=2.3e-09 | rev b= +0.279 p= 4.4e-02 MDE= 0.388 UNDERPOWERED revSt- -> CONCORDANT X-TYPE
   HbA1c->T2D    [2->2]  fwd b=+1.061 p=1.4e-28 | rev b= +0.279 p= 7.1e-80 MDE= 0.041 powered      revSt- -> CONCORDANT SAME-STAGE X-TYPE
-  HbA1c->CAD    [2->4]  fwd b=+0.184 p=2.1e-13 | rev b= +0.031 p= 3.3e-02 MDE= 0.041 powered      revSt- -> CONCORDANT X-TYPE
+  HbA1c->CAD    [2->4]  fwd b=+0.184 p=2.1e-13 | rev b= +0.031 p= 3.3e-02 MDE= 0.041 powered      revSt+ -> DISCORDANT X-TYPE
   T2D  ->CAD    [2->4]  fwd b=+0.129 p=5.3e-09 | rev b= +0.168 p= 1.6e-06 MDE= 0.098 powered      revSt+ -> DISCORDANT_PLEIOTROPIC
   T2D  ->HF     [2->4]  fwd b=+0.052 p=6.3e-05 | rev b= +0.422 p= 3.9e-04 MDE= 0.333 UNDERPOWERED revSt+ -> DISCORDANT
   T2D  ->Stroke [2->4]  fwd b=+0.080 p=3.9e-10 | rev b= +0.232 p= 2.6e-03 MDE= 0.216 UNDERPOWERED revSt+ -> DISCORDANT
   CAD  ->HF     [4->4]  fwd b=+0.285 p=1.2e-119 | rev b= +0.807 p= 6.7e-08 MDE= 0.419 UNDERPOWERED revSt- -> CONCORDANT SAME-STAGE
 
-verdict tally: CONCORDANT=11, DISCORDANT=2, DISCORDANT_PLEIOTROPIC=2
+verdict tally: CONCORDANT=10, DISCORDANT=3, DISCORDANT_PLEIOTROPIC=2

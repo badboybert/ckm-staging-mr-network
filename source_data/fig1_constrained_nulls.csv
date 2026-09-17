@@ -1,4 +1,4 @@
 null,question,p,verdict
-Label permutation,Are the stage LABELS interchangeable?,0.0015,exceeded
-Degree-preserving rewiring,Beyond the traits' exposure/outcome roles?,0.2696,NOT exceeded
+Label permutation,Are the stage LABELS interchangeable?,0.001,exceeded
+Degree-preserving rewiring,Beyond the traits' exposure/outcome roles?,0.2719,NOT exceeded
 Phenotype-class permutation,Degenerate (class nested in stage),1.0,uninformative

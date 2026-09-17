@@ -40,20 +40,20 @@ WORD_LIMIT = 200
 
 SECTIONS = [
     ("What is currently known about this topic?", 3, [
-        "AHA CKM staging places adiposity and dysglycemia in earlier clinical stages of CVD.",
+        "AHA CKM staging places adiposity and dysglycaemia in earlier clinical stages of CVD.",
         "That ordering rests on observational data, where confounding is hard to exclude.",
-        "Existing CKM Mendelian-randomization work maps single edges, not a whole directed network.",
+        "CAD-independent adiposity effects on heart failure are already reported (HERMES, 2020).",
     ]),
     ("What is the key research question?", 1, [
         "Does CKM stage ordering hold genetically, and does adiposity act beyond CAD in heart failure?",
     ]),
     ("What is new?", 3, [
         "All 132 directed edges among 12 CKM traits were estimated bidirectionally in Europeans.",
-        "BMI retained a CAD-independent heart-failure association in multivariable MR.",
-        "Stage concordance beat a label permutation but not a degree-preserving null.",
+        "It quantifies that split: about 80% of the BMI-heart-failure effect bypasses CAD.",
+        "Stage concordance beat a label permutation but NOT a degree-preserving null.",
     ]),
     ("How might this study influence clinical practice?", 1, [
-        "Findings prioritise adiposity-related pathways for heart-failure prevention research.",
+        "Supports adiposity-directed, not glycaemia-directed, heart-failure prevention research.",
     ]),
 ]
 

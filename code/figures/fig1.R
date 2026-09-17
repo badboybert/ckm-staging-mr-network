@@ -32,6 +32,22 @@ ledg  <- rd("staging_ledger_native.csv")
 # 1.1e-3, because prep_fig1.py permuted over a differently ordered node list. The assertion makes
 # that class of drift impossible: the panel can only print what its null vector supports.
 PERM_P     <- as.numeric(getv("perm_p"))
+
+# Round-7 C089: one P formatter for every panel in this figure, matching the manuscript's convention
+# (three decimals at or above 0.01, otherwise a two-significant-figure mantissa with a real
+# superscript exponent), so a panel and the prose print the SAME string.
+.sup <- function(e) {
+  d <- c("⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹")
+  paste0("⁻", paste(d[as.integer(strsplit(as.character(abs(e)), "")[[1]]) + 1], collapse=""))
+}
+.pf1 <- function(p, dec = 3) {
+  if (!is.finite(p)) return("NA")
+  if (p >= 0.01) return(sprintf(paste0("%.", dec, "f"), p))
+  e <- floor(log10(p)); m <- p / 10^e
+  paste0(sub("\\.0$", "", sprintf("%.1f", m)), " × 10", .sup(e))
+}
+.pf <- function(p, dec = 3) vapply(p, .pf1, character(1), dec = dec)
+
 .obs_exact <- as.numeric(getv("n_forward")) / as.numeric(getv("n_cross"))
 # The permutation null is now enumerated EXACTLY (fig1_permnull.csv holds every distinct labeling's
 # concordance), so the printed P is the exact tail fraction, not an add-one Monte-Carlo estimate. The
@@ -53,30 +69,43 @@ ce <- merge(ce, node_xy[, c("node","x","y")], by.x="exp", by.y="node")
 ce <- merge(ce, node_xy[, c("node","x","y")], by.x="out", by.y="node", suffixes=c("",".e"))
 ce$dir <- ifelse(ce$direction == "backward", "backward", "forward")
 
+# Round-7 C031: pull each edge back from the centre of its target node by the disc radius, in
+# data units (the x lane spacing is 1 unit; a size-8.5 disc is about 0.17 x-units and 0.42
+# y-units on this layout).
+.rx <- 0.11; .ry <- 0.80
+.dx <- ce$x.e - ce$x; .dy <- ce$y.e - ce$y
+.len <- pmax(sqrt((.dx/.rx)^2 + (.dy/.ry)^2), 1e-9)
+ce$x.t <- ce$x.e - .dx/.len
+ce$y.t <- ce$y.e - .dy/.len
+
 pa <- ggplot() +
   # stage lane guides
   annotate("rect", xmin=-0.45, xmax=0.45, ymin=-6.4, ymax=5.4, fill=STAGE_COL["1"], alpha=0.06) +
   annotate("rect", xmin= 0.55, xmax=1.45, ymin=-6.4, ymax=5.4, fill=STAGE_COL["2"], alpha=0.06) +
   annotate("rect", xmin= 1.55, xmax=2.45, ymin=-6.4, ymax=5.4, fill=STAGE_COL["4"], alpha=0.06) +
   annotate("text", x=c(0,1,2), y=5.9, label=c("Stage 1","Stage 2","Stage 4"), size=FS_T/.pt, fontface=2, colour="grey25") +
-  geom_curve(data=ce[ce$dir=="forward",], aes(x=x, y=y, xend=x.e, yend=y.e),
+  # Round-7 C031: every arrowhead used to land under a node disc (the discs are drawn after the
+  # edges and are 8.5 pt across), so a figure whose whole point is DIRECTION showed none. Each
+  # edge now stops short of the target node - the shortening is computed in the data units of
+  # the layout, so it holds at any canvas size - and the discs no longer cover the heads.
+  geom_curve(data=ce[ce$dir=="forward",], aes(x=x, y=y, xend=x.t, yend=y.t),
              curvature=0.16, linewidth=0.26, colour="grey65", alpha=0.55,
-             arrow=arrow(length=unit(3,"pt"), type="closed")) +
-  geom_curve(data=ce[ce$dir=="backward",], aes(x=x, y=y, xend=x.e, yend=y.e),
+             arrow=arrow(length=unit(3.4,"pt"), type="closed")) +
+  geom_curve(data=ce[ce$dir=="backward",], aes(x=x, y=y, xend=x.t, yend=y.t),
              curvature=-0.28, linewidth=0.7, colour=POS_COL, linetype="21",
-             arrow=arrow(length=unit(4,"pt"), type="closed")) +
-  geom_point(data=node_xy, aes(x=x, y=y, fill=stage), shape=21, size=8.5, stroke=0.4, colour="white") +
-  geom_text(data=node_xy, aes(x=x, y=y, label=node), size=FS/.pt-0.3, fontface=2, colour="black") +
+             arrow=arrow(length=unit(4.4,"pt"), type="closed")) +
+  geom_point(data=node_xy, aes(x=x, y=y, fill=stage), shape=21, size=9.6, stroke=0.4, colour="white") +
+  geom_text(data=node_xy, aes(x=x, y=y, label=node), size=FS/.pt-1.5, fontface=2, colour="black") +
   scale_fill_manual(values=STAGE_COL, guide="none") +
   annotate("label", x=-0.5, y=-3.6,
-           label=sprintf("AHA CKM staging\nconcordance = %.3f\nperm. P = %.1e",
-                         as.numeric(getv("observed_concordance")), PERM_P),
+           label=sprintf("AHA CKM staging\nconcordance = %.3f\nperm. P = %s",
+                         as.numeric(getv("observed_concordance")), .pf(PERM_P)),
            hjust=0, vjust=1, size=FS/.pt-0.7, colour="grey15", label.size=0, fill=NA, lineheight=0.95) +
   # 2026-07-26: "resolved in Fig 3" -> "evaluated in Figure 3". Figure 3 grades these edges; it does
   # not resolve them (HF->CAD is reported as unresolved), so the old label promised more than the
   # figure it points at delivers.
-  annotate("text", x=1.5, y=-6.25, label="red dashed = reverse/feedback association (evaluated in Figure 3)", size=FS/.pt-0.5, colour=POS_COL, hjust=0.5) +
-  coord_cartesian(xlim=c(-0.55,2.55), ylim=c(-6.6,6.4), clip="off") +
+  annotate("text", x=1.0, y=-7.15, label="red dashed = reverse/feedback association (evaluated in Figure 3)", size=FS/.pt-1.2, colour=POS_COL, hjust=0.5) +
+  coord_cartesian(xlim=c(-0.55,2.55), ylim=c(-7.4,6.4), clip="off") +
   theme_void(base_family=FONT) + theme(plot.margin=margin(4,4,2,4))
 
 # ---------- 1b. canonical / control edges (validity) ----------
@@ -105,7 +134,7 @@ obs <- as.numeric(getv("observed_concordance")); pp <- PERM_P   # derived + asse
 pc <- ggplot(perm, aes(concordance)) +
   geom_histogram(bins=40, fill="grey80", colour="white", linewidth=0.15) +
   geom_vline(xintercept=obs, colour=POS_COL, linewidth=0.7) +
-  annotate("text", x=obs-0.02, y=Inf, label=sprintf("observed = %.3f\nP = %.1e", obs, pp), colour=POS_COL,
+  annotate("text", x=obs-0.02, y=Inf, label=sprintf("observed = %.3f\nP = %s", obs, .pf(pp)), colour=POS_COL,
            hjust=1, vjust=1.4, size=FS/.pt-0.7, lineheight=0.95) +
   # vjust must clear the "observed" annotation above it (at vjust=1.4 the two collide mid-panel), and
   # the label must be LEFT-ANCHORED inside xlim — centred at x=0.30 it overran the 0.15 limit and the
@@ -137,13 +166,16 @@ pd <- ggplot(ledg, aes(bnum, transition, colour=verdict)) +
      labels=c(CONCORDANT=sprintf("concordant (%d)", .vn[["CONCORDANT"]]),
               INDETERMINATE=sprintf("indeterminate (%d)", .vn[["INDETERMINATE"]]),
               DISCORDANT=sprintf("reverse effect (%d)", .vn[["DISCORDANT"]]),
-              DISCORDANT_CAVEATED=sprintf("reverse, pleiotropy-caveated (%d)", .vn[["DISCORDANT_CAVEATED"]]))) +
+              # 2026-09-17: at 8 pt this label overran the legend clip and the PAGE showed
+              # "reverse, pleiotropy-caveated (2" -- the closing bracket was cut. Shortened to the
+              # caption's own term ("reverse-caveated") rather than shrinking all four entries.
+              DISCORDANT_CAVEATED=sprintf("reverse, caveated (%d)", .vn[["DISCORDANT_CAVEATED"]]))) +
   guides(colour=guide_legend(nrow=2, byrow=TRUE)) +
   labs(x="Forward-transition causal effect", y=NULL,
        # invariant #10: "pre-specified", never "pre-registered" (there is no time-stamped registration)
        title=sprintf("Falsifiable staging ledger (%d transitions)", nrow(ledg))) +
   coord_cartesian(xlim=c(0, 1.25)) + theme_ckm(legend="bottom") +
-  theme(legend.text=element_text(size=8), axis.text.y=element_text(size=8))
+  theme(legend.text=element_text(size=8), axis.text.y=element_text(size=6.4))
 
 # ---------- 1e. concordance robustness across thresholds ----------
 # Both rows are DERIVED, never typed. The genome-wide-strict pair is parsed out of the analysis
@@ -162,7 +194,7 @@ pe <- ggplot(rob, aes(x, conc)) +
   geom_hline(yintercept=0.5, linetype="dashed", colour="grey65", linewidth=0.3) +
   annotate("text", x=1.5, y=0.515, label="chance (0.5)", size=FS/.pt-1, colour="grey55") +
   geom_point(size=2.6, colour=POS_COL) +
-  geom_text(aes(label=sprintf("%.3f\nP=%.1e", conc, p)), vjust=-0.5, size=FS/.pt-1, lineheight=0.9) +
+  geom_text(aes(label=sprintf("%.3f\nP=%s", conc, .pf(p))), vjust=-0.5, size=FS/.pt-1, lineheight=0.9) +
   scale_x_continuous(breaks=c(1,2), labels=rob$thr) +
   labs(x=NULL, y="Cross-stage concordance", title="Robust to edge-inclusion threshold") +
   # ylim upper must clear the TWO-LINE label drawn above a point at y = 1.000. At 1.08 the top line
@@ -212,7 +244,7 @@ pf <- ggplot(cn, aes(p, null, colour=verdict)) +
   geom_point(size=2.8) +
   # hjust must flip with position: at this (inset, ~40%-width) panel a centred label overflows the
   # axis at both ends — the leftmost ran into the y-axis text, the rightmost off the panel.
-  geom_text(aes(label=ifelse(p<0.01, sprintf("P = %.4f", p), sprintf("P = %.2f", p)),
+  geom_text(aes(label=paste("P =", .pf(p, dec = 2)),   # the prose states the ceiling P to two decimals (0.27)
                 hjust=ifelse(p < 0.01, -0.12, 1.12)),
             vjust=-1.2, size=FS/.pt-1.3, colour="black") +
   scale_colour_manual(values=c("exceeded"="#2E7D32","NOT exceeded"=POS_COL,"uninformative"=NULL_COL),
@@ -225,7 +257,7 @@ pf <- ggplot(cn, aes(p, null, colour=verdict)) +
   scale_y_discrete(labels=c("Label permutation"="Label\npermutation",
                             "Degree-preserving rewiring"="Degree-preserving\nrewiring",
                             "Phenotype-class permutation"="Phenotype-class\npermutation")) +
-  annotate("text", x=0.05, y=3.62, label="P = 0.05", size=FS/.pt-1.6, colour="grey45", hjust=1.1, vjust=0) +
+  annotate("text", x=0.05, y=0.62, label="P = 0.05", size=FS/.pt-1.6, colour="grey45", hjust=-0.1, vjust=0) +
   # The robustness figures (LOO / drop-SBP+Stroke / bootstrap CI) are stated in the FIGURE LEGEND,
   # not on-panel: at this width the two-line annotation printed straight over the grey lollipop.
   # They are still derived here so the legend and the panel cannot drift apart:
@@ -233,13 +265,13 @@ pf <- ggplot(cn, aes(p, null, colour=verdict)) +
   coord_cartesian(ylim=c(0.5,3.9), clip="off") +
   guides(colour=guide_legend(nrow=1)) +
   labs(x="P vs each null (log scale)", y=NULL) +
-  theme_ckm(legend="bottom") + theme(axis.text.y=element_text(size=8))
+  theme_ckm(legend="bottom") + theme(axis.text.y=element_text(size=6.6, lineheight=0.85))
 
 # ---------- 1g. inserting the missing subclinical stage-3 tier (CAC) ----------
 cac <- read.csv(file.path(D, "fig1_cac_staging.csv"), stringsAsFactors=FALSE)
 cac$network <- factor(cac$network, levels=cac$network)
 cac$lab <- ifelse(is.na(cac$p) | cac$p=="", sprintf("%.3f", cac$concordance),
-                  sprintf("%.3f\nP=%.4g", cac$concordance, as.numeric(cac$p)))
+                  sprintf("%.3f\nP=%s", cac$concordance, .pf(as.numeric(cac$p))))
 pg <- ggplot(cac, aes(network, concordance)) +
   geom_col(width=0.6, fill="#8DA0CB") +
   geom_hline(yintercept=0.5, linetype="dashed", colour="grey60", linewidth=0.3) +
@@ -262,6 +294,6 @@ pg <- ggplot(cac, aes(network, concordance)) +
 # Do NOT use a patchwork `design` grid for this: it forces ONE shared column grid across every row.
 row_fg <- (plot_spacer() | pf | pg | plot_spacer()) + plot_layout(widths=c(0.25, 1, 1, 0.25))
 fig1 <- (pa) / (pc | pd) / (pe | pb) / row_fg +
-  plot_layout(heights=c(1.30, 0.88, 0.88, 0.78)) +
+  plot_layout(heights=c(1.16, 1.06, 0.84, 0.74)) +
   plot_annotation(tag_levels="a", theme=theme(plot.tag=element_text(size=FS_TAG, face="bold")))
-save_fig(fig1, "Figure1", 183, 262)
+save_fig(fig1, "Figure1", 170, 224)

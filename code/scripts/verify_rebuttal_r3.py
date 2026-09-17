@@ -104,10 +104,17 @@ print("=" * 96)
 
 # ---------------------------------------------------------------- 1. the package the letter names
 n_files = sum(len(fs) for _, _, fs in os.walk(PKG))
-check("§1 the package has 99 files", n_files == 99, f"{n_files}")
+# Round 7 added main-text Table 1 (TABLES.md + its .docx rendering), so the package grew from 99
+# files to 101. The letter states the count, so compare the two rather than pinning a literal.
+_letter_txt = io.open(LETTER, encoding="utf-8").read()
+_m_files = re.search(r"(\d+)\s+files", _letter_txt)
+_claimed_files = int(_m_files.group(1)) if _m_files else None
+check(f"§1 the package file count matches the letter ({n_files})", n_files == _claimed_files,
+      f"letter says {_claimed_files}, package has {n_files}")
 man = io.open(os.path.join(PKG, "MANIFEST_checksums.txt"), encoding="utf-8").read()
 n_man = len([l for l in man.splitlines() if re.match(r"^[0-9a-f]{32}\s", l)])
-check("§1 the manifest carries 98 entries", n_man == 98, f"{n_man}")
+check(f"§1 the manifest carries one entry per shipped file except itself ({n_files - 1})",
+      n_man == n_files - 1, f"{n_man} entries for {n_files} files")
 
 # ---------------------------------------------------------------- 2. the headline numbers
 # These used to be hardcoded here, which meant a number could move in the package and the letter and
@@ -127,7 +134,7 @@ def stated(pat, label):
 
 
 for pat, label, actual in [
-    (r"Abstract ([\d,]+) words", "the abstract length", F["abstract_full_words"]),
+    (r"Abstract \*{0,2}([\d,]+)\*{0,2} words", "the abstract length", F["abstract_full_words"]),
     (r"main text \*\*([\d,]+)\*\* words", "the main-text length", F["main_text_words"]),
     (r"Introduction ([\d,]+)", "Introduction words", w["INTRODUCTION"]),
     (r"Methods ([\d,]+)", "Methods words", w["METHODS"]),
@@ -144,10 +151,11 @@ for pat, label, actual in [
         check(f"§1 {label} in the letter matches the package ({actual})", v == actual, f"letter says {v}")
 
 _pct_actual = round(100 * (F["main_text_words"] - 12436) / 12436, 1)
-_m = re.search(r"12,436 → ([\d,]+) words, (-?[\d.]+)%", lt_head)
+# the manuscript writes a typographic minus; accept either sign glyph
+_m = re.search(r"12,436 → ([\d,]+) words, ([−-]?[\d.]+)%", lt_head)
 check("§4 the trim figure in the letter is the one the package supports",
       bool(_m) and int(_m.group(1).replace(",", "")) == F["main_text_words"]
-      and abs(float(_m.group(2)) - _pct_actual) < 0.05,
+      and abs(float(_m.group(2).replace("−", "-")) - _pct_actual) < 0.05,
       f"letter says {_m.groups() if _m else 'nothing'}, package gives {F['main_text_words']:,} / {_pct_actual}%")
 
 # ---------------------------------------------------------------- 3. Supplementary Methods
@@ -184,22 +192,31 @@ _s5b = _wb["S5b_ledger_bound_sensitivity"] if "S5b_ledger_bound_sensitivity" in 
 if _s5b is None:
     BAD.append("§3 the S5b bound-sensitivity sheet is missing")
 else:
-    _rows = [r for r in _s5b.iter_rows(values_only=True) if r and r[0] and str(r[0]).strip()]
+    # A ledger row NAMES A TRANSITION. "non-empty first cell" also matched the footnote round 7
+    # added, and the check then counted 16 transitions where there are 15.
+    _rows = [r for r in _s5b.iter_rows(values_only=True)
+             if r and r[0] and (str(r[0]).strip() == "Transition"
+                                or "→" in str(r[0]) or "->" in str(r[0]))]
     _hdr = next(i for i, r in enumerate(_rows) if str(r[0]).strip() == "Transition")
     # keys are compared notation-independently: the workbook typesets "X->Y" as "X→Y".
     _data = {str(r[0]).strip().replace("→", "->"): [str(x).strip() if x else "" for x in r[1:6]]
              for r in _rows[_hdr+1:]}
     check("§3 the ledger covers 15 transitions", len(_data) == 15, str(len(_data)))
-    _prim = [k for k, v in _data.items() if v[2].startswith("DISCORDANT")]
-    check("§3 4 of 15 transitions are discordant at the primary bounds", len(_prim) == 4,
+    # Round 7 (C049): S5/S5b now print REVERSE_SUPPORTED / REVERSE_CAVEATED instead of DISCORDANT /
+    # DISCORDANT_CAVEATED. This block reads the WORKBOOK, so it asserts the new vocabulary, and the
+    # legacy tokens must be gone from the sheet entirely.
+    _legacy = [k for k, v in _data.items() if any(str(x).startswith("DISCORDANT") for x in v)]
+    check("§3 the retired DISCORDANT vocabulary is gone from S5b", not _legacy, f"{_legacy}")
+    _prim = [k for k, v in _data.items() if v[2].startswith("REVERSE_")]
+    check("§3 4 of 15 transitions carry a reverse effect at the primary bounds", len(_prim) == 4,
           f"{len(_prim)}: {_prim}")
     for _t in ("T2D->HF", "T2D->Stroke"):
-        check(f"§3 {_t} is discordant at all five bound settings",
-              _t in _data and all(v.startswith("DISCORDANT") for v in _data[_t]),
+        check(f"§3 {_t} carries a reverse effect at all five bound settings",
+              _t in _data and all(v.startswith("REVERSE_") for v in _data[_t]),
               str(_data.get(_t)))
     _flip = [k for k, v in _data.items()
-             if not v[2].startswith("DISCORDANT") and any(x.startswith("DISCORDANT") for x in v)]
-    check("§3 no primary-concordant transition becomes discordant at any setting", not _flip,
+             if not v[2].startswith("REVERSE_") and any(x.startswith("REVERSE_") for x in v)]
+    check("§3 no primary-concordant transition acquires a reverse effect at any setting", not _flip,
           f"{_flip}")
 
 # ---------------------------------------------------------------- 5. section 5.2, mediation
@@ -246,7 +263,8 @@ present("§3 the distortion test is significant for five edges", r"distortion te
 # ---------------------------------------------------------------- 8. section 5.5, cross-ancestry
 present("§3 the global offset 0.436 is reported", r"0\.436")
 present("§3 the offset z = -21.7 is reported", r"21\.7")
-present("§3 only 6 of the 14 differences persist", r"(six|6) of the 14")
+present("§3 absorbing the offset leaves 12 edges differing (six shared, six new)",
+        r"six of the original 14 and six others|12 edges differ")
 present("§3 Figure 4a reads 'not significant'", r"not significant", "Figure4.pdf")
 absent("§3 'not sig (power)' is gone", r"not sig \(power\)|power artifact")
 present("§3 node-level resampling retains a node with probability 0.632", r"0\.632")
@@ -256,7 +274,7 @@ absent("§3 'directions are not biased' is gone", r"directions are not biased")
 # The on-panel label carries a line break between "aligns" and "with the EUR direction". The
 # needle assumed one text run because the retired local reader concatenated across the break; the
 # shared reader preserves it. Match across whitespace instead of assuming the run boundary.
-present("§3 Figure 4e reads 'aligns with the EUR direction'", r"aligns\s+with the EUR", "Figure4.pdf")
+present("§3 Figure 4e marks the anomaly the second cohort resolves", r"TPMI recovers the", "Figure4.pdf")
 
 # ---------------------------------------------------------------- 9. section 4, reorder + numbers
 res = SURF["01_manuscript/RESULTS.md"]
@@ -264,13 +282,13 @@ check("§4 the Results open on coverage",
       res.lstrip().split("\n")[0].startswith("# Results") and
       "We estimated all 132 non-self directed relationships" in res.split("##")[0])
 check("§4 the opening states 58 Bonferroni-significant", "Fifty-eight met network-wide" in res)
-check("§4 the opening states 53 after Steiger gating", "53 remained after Steiger gating" in res)
+check("§4 the opening states 54 after Steiger gating", "54 remained after Steiger gating" in res)
 edges_csv = os.path.join(PKG, "05_source_data", "fig1_edges.csv")
 n_graph = sum(1 for _ in csv.DictReader(io.open(edges_csv, encoding="utf-8")))
-check("§2 the graph really contains 53 edges", n_graph == 53, str(n_graph))
+check("§2 the graph really contains 54 edges", n_graph == 54, str(n_graph))
 check("§2 derive_facts really gives 58 Bonferroni edges", F["edges_passing_bonferroni"] == 58,
       str(F["edges_passing_bonferroni"]))
-absent("§2 the stale '54-edge' claim is gone", r"54[- ]edge")
+absent("§2 the superseded '53-edge' claim is gone", r"53[- ]edge")
 DICTION = ["direct driver", "predominantly via", r"\bcleanly\b", "genuine null", "true causal",
            "false positive", "not a selection artifact", "pan-subtype", "track the identity line",
            "vicious", "load-bearing", "earned that reading", "hardened the hedge", "knife-edge"]
@@ -280,11 +298,14 @@ check("§4 all section-6.3 diction phrases are absent", not _dhits, f"{_dhits}")
 # ---------------------------------------------------------------- 10. section 6, figures declined
 present("§5 Figure 1e still reads 'per-SD / log-OR' (declined, reviewer mistaken)",
         r"per-SD / log-OR", "Figure1.pdf")
-_s7 = SURF.get("PDF:SupplFig7.pdf", "")
-check("§5 SupplFig7 has exactly 2 HIGHER CONF. rows (BMI, and CAD->HF/axis)",
-      len(re.findall(r"HIGHER CONF", _s7)) == 2, str(len(re.findall(r"HIGHER CONF", _s7))))
+# Round-7 Q7: the graded synthesis moved from the SupplFig7 text panel to main-text Table 1, so
+# the tier checks follow the claim to where it lives now.
+_tab1 = SURF.get("01_manuscript/TABLES.md", "")
+_hi = [ln for ln in _tab1.split("\n") if ln.startswith("| **Higher confidence**")]
+check("§5 Table 1 carries the higher-confidence tier", len(_hi) >= 2, str(len(_hi)))
+_stg = [ln for ln in _tab1.split("\n") if "AHA stage ordering" in ln]
 check("§5 the AHA-staging row states the degree-preserving bound",
-      "not beyond a degree-preserving null" in _s7)
+      bool(_stg) and "degree-preserving rewiring null" in _stg[0])
 
 # ---------------------------------------------------------------- 11. section 6, compliance
 ri = SURF.get("01_manuscript/RESEARCH_INSIGHTS.md", "")
@@ -301,8 +322,10 @@ except Exception as e:
 meth = SURF["01_manuscript/METHODS.md"]
 check("§6 the LLM disclosure is in Methods", "large language model" in meth.lower())
 check("§6 the LLM disclosure affirms author responsibility", "full responsibility" in meth.lower())
-check("§6 the LLM disclosure carries an author-supplied marker",
-      bool(re.search(r"AUTHOR-SUPPLIED[^\]]*confirm that this statement", meth)))
+# R6 (2026-08-20): the author-facing "[AUTHOR-SUPPLIED — confirm ...]" instruction was removed and the
+# disclosure made publication-facing (Claude-only, author-confirmed). The marker must now be ABSENT.
+check("§6 the LLM disclosure is publication-facing (R6: no author-supplied marker)",
+      "[AUTHOR-SUPPLIED" not in meth and "No AI system accessed raw data" in meth)
 
 # ---------------------------------------------------------------- 12. section 8, the four not-done
 NOTDONE = {"10.1-2 'is genetically untested' remains": r"is genetically untested",
@@ -364,7 +387,8 @@ check("no shipped surface names the internal review",
 # ---------------------------------------------------------------- 14. reference integrity
 refs = SURF["01_manuscript/REFERENCES_NUMBERED.md"]
 _n = sorted({int(x) for x in re.findall(r"^\s*(\d+)\.", refs, flags=re.M)})
-check("§11 the reference list is 1..50 with no gaps", _n == list(range(1, 51)), f"{_n[:3]}..{_n[-3:]}")
+check(f"§11 the reference list is 1..{F['references_cited']} with no gaps",
+      _n == list(range(1, F['references_cited'] + 1)), f"{_n[:3]}..{_n[-3:]}")
 
 # ---------------------------------------------------------------- report
 print()

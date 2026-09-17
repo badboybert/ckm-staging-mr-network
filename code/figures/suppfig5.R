@@ -73,6 +73,6 @@ sf5 <- ggplot(d, aes(b, source, colour=source)) +
   theme(axis.text.y=element_blank(), axis.ticks.y=element_blank(),
         panel.spacing=unit(6,"pt"), strip.text=element_text(size=8))
 
-save_fig(sf5, "SupplFig5", 178, 138)
+save_fig(sf5, "SupplFig5", 170, 132)
 cat("SF5 done:", nrow(d), "rows across", length(unique(d$edge)), "edges;",
     sum(d$sig), "of", nrow(d), "pass Bonferroni\n")

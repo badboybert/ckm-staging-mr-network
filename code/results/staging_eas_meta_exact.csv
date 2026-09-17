@@ -1,0 +1,3 @@
+variant,edges_meta,bonferroni,retained_edges,nodes,cross,forward,backward,concordance,perm_ge,perm_total,exact_p
+fixed-effect,34,1.471e-03,12,11,11,10,1,0.9091,80,1320,0.060606
+random-effect,34,1.471e-03,8,10,7,7,0,1.0,111,840,0.132143

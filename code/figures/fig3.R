@@ -42,10 +42,17 @@ asym$method <- factor(asym$method, levels=c("IVW","MR-Egger","Weighted median"))
 lab3a <- data.frame(edge=factor(c("CAD → HF","HF → CAD"), levels=c("HF → CAD","CAD → HF")),
                     # two SHORT lines: a single long line overruns the panel and is clipped at both ends
                     x=c(1.0,1.0),
-                    txt=c(sprintf("methods concordant\nSteiger ✓ · Egger-int P=%s", .pfmt(.ch$egger_intercept_p)),
+                    txt=c(sprintf("methods concordant\nSteiger pass · Egger P=%s", .pfmt(.ch$egger_intercept_p)),
                           # %.0f rounded 5.61 up to "6×" while the Results said "fivefold"; one decimal
                           # makes the panel and the prose state the same number.
-                          sprintf("methods diverge %.1f×\nSteiger ✗ · Egger-int P=%s", .fold, .pfmt(.hc$egger_intercept_p))))
+                          sprintf("methods diverge %.1f×\nSteiger fail · Egger P=%s", .fold, .pfmt(.hc$egger_intercept_p))))
+# Round-7 C029: the four bottom legends of the side-by-side panels overlapped each other. They are
+# now COLLECTED by patchwork into one strip under the whole figure, which is possible because panels
+# a and f share the estimator palette and panels b and e share the causal/sharing palette after the
+# round-7 colour harmonisation.
+.leg <- theme(legend.text=element_text(size=FS-2), legend.key.width=grid::unit(2.8,"mm"),
+              legend.box.margin=margin(-2,0,0,0))
+
 pa <- ggplot(asym, aes(b, edge, colour=method, shape=method)) +
   geom_vline(xintercept=0, linewidth=0.3, colour="grey70") +
   geom_point(size=2.4, position=position_dodge(width=0.55)) +
@@ -57,7 +64,8 @@ pa <- ggplot(asym, aes(b, edge, colour=method, shape=method)) +
   scale_shape_manual(values=c(IVW=16,"MR-Egger"=17,"Weighted median"=15),
                      labels=c("IVW","MR-Egger","W. median"), name=NULL) +
   labs(x="Causal estimate (log-OR)", y=NULL, title="CAD↔HF estimates are directionally asymmetric") +
-  coord_cartesian(xlim=c(-0.1,2.0)) + theme_ckm(legend="bottom")
+  scale_x_continuous(breaks=c(0,1,2)) +
+  coord_cartesian(xlim=c(-0.15,2.3)) + theme_ckm(legend="bottom") + .leg
 
 # ---------- 3b. CAUSE across 10 edges ----------
 ca$edge <- paste0(ca$exposure,"→",ca$outcome)
@@ -72,26 +80,31 @@ pb <- ggplot(ca, aes(z_sharing_vs_causal, edge, colour=verd)) +
 # other ("Weighted medi[ar]causal model favoured", "sharing model favou[red]VW"). The legend
 # labels are shortened and the canvas is taller; the full wording stays in the legend text.
   scale_colour_manual(values=c("causal model favoured"=CAUSAL_COL, "sharing model favoured"=SHARING_COL),
+                      breaks=c("causal model favoured","sharing model favoured"),
                       labels=c("causal favoured","sharing favoured"), name=NULL) +
-  labs(x="CAUSE Δ-ELPD z (negative → causal model favoured)", y=NULL,
+  labs(x="CAUSE Δ-ELPD z", y=NULL,
        title="CAUSE model preference, on a continuous scale") +
+  scale_x_continuous(breaks=c(-8,-4,0)) +
   annotate("text", x=-8.5, y=9.4, label="causal model favoured", colour=CAUSAL_COL, size=FS/.pt-1.5, hjust=0) +
-  theme_ckm(legend="bottom")
+  theme_ckm(legend="bottom") + .leg
 
 # ---------- 3c. MR-PRESSO raw -> corrected ----------
 pr$edge <- paste0(pr$exposure,"→",pr$outcome)
 pr$distort <- ifelse(pr$distortion_p=="<0.001" | suppressWarnings(as.numeric(pr$distortion_p))<0.05, "distorted","robust")
 pr$distort[is.na(pr$distort)] <- "robust"
 pc_ <- reshape(pr[,c("edge","raw_b","corrected_b","distort","n_outliers")], direction="long",
-               varying=c("raw_b","corrected_b"), v.names="b", times=c("raw","outlier-\ncorrected"), timevar="stage")
-pc_$stage <- factor(pc_$stage, levels=c("raw","outlier-\ncorrected"))
+               varying=c("raw_b","corrected_b"), v.names="b", times=c("raw","corrected"), timevar="stage")
+pc_$stage <- factor(pc_$stage, levels=c("raw","corrected"))
 pc <- ggplot(pc_, aes(stage, b, group=edge, colour=distort)) +
   geom_line(linewidth=0.6) + geom_point(size=1.9) +
-  ggrepel::geom_text_repel(data=pc_[pc_$stage=="outlier-\ncorrected",], aes(label=edge),
-     size=FS/.pt-1.3, direction="y", hjust=0, nudge_x=0.1, segment.size=0.2, min.segment.length=0) +
+  ggrepel::geom_text_repel(data=pc_[pc_$stage=="corrected",], aes(label=edge),
+     size=FS/.pt-1.6, direction="y", hjust=0, nudge_x=0.12, segment.size=0.2, min.segment.length=0,
+     box.padding=0.28, point.padding=0.1, max.overlaps=Inf, seed=20260718) +
   scale_colour_manual(values=c("distorted"=POS_COL, "robust"=NULL_COL), name=NULL) +
-  labs(x=NULL, y="Causal estimate", title="MR-PRESSO: only HF→CAD is outlier-distorted") +
-  coord_cartesian(xlim=c(1,2.7)) + theme_ckm(legend="bottom")
+  labs(x=NULL, y="Causal estimate", title="MR-PRESSO: only HF→CAD is outlier-distorted (raw → outlier-corrected)") +
+  coord_cartesian(xlim=c(1,2.75)) + theme_ckm(legend="bottom") +
+  # the two stage names collide at half-canvas width; the panel title carries them instead
+  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
 
 # ---------- 3d. the two feedback limbs differ in robustness (H5, CAUSE-independent) ----------
 # REPLACES the former hardcoded Steiger/PRESSO/CAUSE triangulation tile-matrix, which asserted
@@ -129,6 +142,7 @@ pd <- ggplot(sl5, aes(b, estimator, colour=edge, shape=sig)) +
   scale_shape_manual(values=c("P < 0.05"=16, "n.s."=1), name=NULL) +
   labs(x="Reverse-edge effect on T2D (95% CI)", y=NULL,
        title="Feedback limbs differ: HF→T2D robust, CAD→T2D pleiotropy-caveated") +
+  scale_x_continuous(breaks=c(-0.2,0.2,0.6)) +
   coord_cartesian(xlim=c(-0.25, 0.68)) +
   theme_ckm(legend="bottom") +
   theme(axis.text.y=element_text(size=8), strip.text.y=element_text(angle=0, face=2))
@@ -143,12 +157,17 @@ pd <- ggplot(sl5, aes(b, estimator, colour=edge, shape=sig)) +
 .hdl_dir  <- .fd$direct_b[.fd$exposure=="HDL"][1]
 .hdl_marg <- .ap$total_b[.ap$exposure=="HDL"][1]
 stopifnot(is.finite(.ldl_dir), is.finite(.hdl_dir), is.finite(.hdl_marg))
-sp <- data.frame(edge=c("LDL→CAD\n(positive-control\nassociation)","HDL→CAD\n(correlated-marker\ncalibration association)"),
+sp <- data.frame(edge=c("LDL→CAD\n(positive-control\nassociation)","HDL→CAD\n(correlated-marker negative control)"),
                  z=c(-5.87,-2.46),
                  mvmr=c(sprintf("direct %+.2f (robust)", .ldl_dir),
-                        sprintf("attenuates %.2f→%.2f", .hdl_marg, .hdl_dir)),
+                        sprintf("attenuates
+%.2f→%.2f", .hdl_marg, .hdl_dir)),
                  kind=c("causal model favoured","sharing model favoured"))
-sp$hj <- ifelse(sp$z < -4, 0, 1)      # left point grows right, right point grows left
+sp$hj <- c(0, 0)   # both annotations grow RIGHT: the panel has room there (round-7 C029)
+# 2026-09-17: at hjust=0 the one-line HDL label needed ~305 pt against a 277 pt clip, so the PDF
+# DREW "attenuates -0.31→-0.16" while the page SHOWED "attenuates -0". A content-stream grep
+# passes on that; only a clip-aware read catches it. Breaking the label in two keeps the anchor
+# (flipping it to hjust=1 re-creates the round-4 LEFT underrun this comment block records).
 sp$edge <- factor(sp$edge, levels=rev(sp$edge))
 pe <- ggplot(sp, aes(z, edge, colour=kind)) +
   geom_vline(xintercept=-1.96, linetype="dashed", colour="grey60", linewidth=0.3) +
@@ -158,12 +177,15 @@ pe <- ggplot(sp, aes(z, edge, colour=kind)) +
   # rendered as "irect +0.50 (robust)"; left-aligning both then pushed the HDL label off the RIGHT.
   # The anchor is therefore chosen per point - grow away from the nearer edge.
   geom_text(aes(label=mvmr, hjust=hj), vjust=2, size=FS/.pt-1.4, colour="grey35") +
-  scale_colour_manual(values=c("causal model favoured"=CAUSAL_COL,"sharing model favoured"="#E69F00"),
-                      labels=c("causal favoured","sharing favoured"), name=NULL) +
+  # panel b already carries this key in the collected legend strip; a second identical one is noise
+  scale_colour_manual(values=c("causal model favoured"=CAUSAL_COL,"sharing model favoured"=SHARING_COL),
+                      breaks=c("causal model favoured","sharing model favoured"),
+                      labels=c("causal favoured","sharing favoured"), name=NULL, guide="none") +
   annotate("text", x=-1.96, y=2.5, label="CAUSE causal-model\npreference threshold", size=FS/.pt-1.6, colour="grey55", lineheight=0.9) +
   labs(x="CAUSE Δ-ELPD z", y=NULL,
        title="CAUSE favours the causal model for a confounded marker (HDL)") +
-  coord_cartesian(xlim=c(-7,0.3)) + theme_ckm(legend="bottom")
+  scale_x_continuous(breaks=c(-6,-4,-2,0)) +
+  coord_cartesian(xlim=c(-8.6,1.6)) + theme_ckm(legend="bottom") + .leg
 
 # ---------- 3f. per-SNP scatter for the headline edge (instrument-level evidence for CAD->HF) ----------
 # Source data exported by suppfig3.R (re-harmonised via TwoSampleMR, IVW reproduces the committed table to <1e-15).
@@ -172,7 +194,7 @@ DD3   <- file.path(FIG, "suppfig_data")
 sc3   <- read.csv(file.path(DD3, "suppfig3_scatter.csv"), stringsAsFactors=FALSE)
 sl3   <- read.csv(file.path(DD3, "suppfig3_slopes.csv"),  stringsAsFactors=FALSE)
 sc3   <- sc3[sc3$edge == "CAD -> HF", ]; sl3 <- sl3[sl3$edge == "CAD -> HF", ]
-MCOL3 <- c("IVW"="#B2182B", "MR-Egger"="#4393C3", "Weighted median"="#E69F00")
+MCOL3 <- c("IVW"="#333333", "MR-Egger"="#0072B2", "Weighted median"="#009E73")
 MLAB3 <- c("IVW"="IVW", "MR-Egger"="MR-Egger", "Weighted median"="W. median")
 pf <- ggplot(sc3, aes(bx, by)) +
   geom_hline(yintercept=0, linewidth=0.2, colour="grey80") +
@@ -184,9 +206,11 @@ pf <- ggplot(sc3, aes(bx, by)) +
   scale_colour_manual(values=MCOL3, labels=MLAB3, name=NULL) +
   labs(x="SNP effect on CAD (log-OR)", y="SNP effect on HF (log-OR)",
        title="CAD→HF per-SNP scatter: the three estimators coincide") +
-  theme_ckm(legend="bottom")
+  scale_x_continuous(breaks=c(0,0.2,0.4)) +
+  theme_ckm(legend="bottom") + .leg
 
 fig3 <- (pa | pb) / (pc | pd) / (pe | pf) +
-  plot_layout(heights=c(1, 1, 0.9)) +
-  plot_annotation(tag_levels="a", theme=theme(plot.tag=element_text(size=FS_TAG, face="bold")))
-save_fig(fig3, "Figure3", 183, 232)
+  plot_layout(heights=c(1, 1, 0.9), guides="collect") +
+  plot_annotation(tag_levels="a", theme=theme(plot.tag=element_text(size=FS_TAG, face="bold"))) &
+  theme(legend.position="bottom", legend.box="vertical", legend.spacing.y=grid::unit(0.4,"mm"))
+save_fig(fig3, "Figure3", 170, 214)

@@ -1,0 +1,23 @@
+# Step 77 - EXACT staging permutation P for the BBJ+TPMI meta networks
+# Enumerated null (no Monte Carlo); supersedes the n=10,000 empirical P in
+# results/staging_eas_meta.txt for the two numbers quoted in the Results.
+
+===== FIXED-EFFECT META =====
+  edges meta-analysed        : 34   (Bonferroni bar 0.05/34 = 1.47e-03)
+  significant Steiger-correct: 12 over 11 nodes
+  cross-stage edges          : 11  forward 10  backward 1
+  backward edges             : [('T2D', 'BMI')]
+  stage-order CONCORDANCE    : 0.909
+  EXACT permutation P        : 80/1320 = 0.0606   (11 nodes carrying an edge)
+  => NOT beyond chance
+
+===== RANDOM-EFFECT META =====
+  edges meta-analysed        : 34   (Bonferroni bar 0.05/34 = 1.47e-03)
+  significant Steiger-correct: 8 over 10 nodes
+  cross-stage edges          : 7  forward 7  backward 0
+  backward edges             : none
+  stage-order CONCORDANCE    : 1.000
+  EXACT permutation P        : 111/840 = 0.1321   (10 nodes carrying an edge)
+  => NOT beyond chance
+
+NOTE: tests necessary POPULATION-LEVEL causal-ordering conditions, not within-person progression.

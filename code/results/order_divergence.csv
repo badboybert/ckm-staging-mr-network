@@ -1,8 +1,8 @@
 statistic,variant,value,p,k_or_nodes
-node_order_tau,main,0.4915,0.0455,12
-node_order_tau,drop_->BMI,0.6786,0.00555,12
-node_order_tau,drop_SBP(sens),0.4643,0.0731,12
-node_order_tau,drop_both(sens),0.6333,0.0071,12
+node_order_tau,main,0.2632,0.3251,12
+node_order_tau,drop_->BMI,0.4444,0.0963,12
+node_order_tau,drop_SBP(sens),0.3462,0.2135,12
+node_order_tau,drop_both(sens),0.5088,0.0449,12
 edge_sign_conc,main,0.6769,0.005918,65
 edge_sign_conc,drop_->BMI,0.6825,0.005152,63
 edge_sign_conc,drop_SBP,0.6667,0.01349,60

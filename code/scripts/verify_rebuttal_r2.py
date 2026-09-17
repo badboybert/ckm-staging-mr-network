@@ -134,7 +134,9 @@ for pat, name, where in [
     (r"correlated-marker negative control", "correlated-marker qualifier", None),
     (r"compatible with overlap", "'compatible with overlap and/or cohort differences'", None),
     (r"not (?:time-stamped or )?prospectively registered|No analysis was time-stamped", "not-registered statement", None),
-    (r"HIGHER CONF", "HIGHER CONFIDENCE grade on the synthesis panel", "PDF:SupplFig7"),
+    # Round-7 Q7: the graded synthesis moved from the SupplFig7 text panel to main-text Table 1.
+        # relpath uses the platform separator, so the surface is matched on its basename
+    (r"Higher confidence", "Higher confidence tier in main-text Table 1", "TABLES.md"),
     (r"Hartung", "Hartung-Knapp", "PDF:SupplFig6"),
     (r"index-event|collider", "index-event/collider caveat", None),
     (r"Node-level", "node-level row on the portability panel", "PDF:Figure4"),
@@ -208,8 +210,16 @@ check("p=0.2238" in hk and "*P* = 0.22" in LET, "Hartung-Knapp P=0.22 matches h4
 # ledger bound-invariance, recomputed rather than quoted
 ws = _wb["S5b_ledger_bound_sensitivity"]
 rows = [r for r in ws.iter_rows(values_only=True)][2:]
-rows = [r for r in rows if r and r[0]]
-DIS = lambda v: bool(v) and str(v).startswith("DISCORDANT")
+# A ledger ROW names a transition. Filtering on "non-empty first cell" also swept in the sheet's
+# footnote once round 7 added one, and the check then reported 16 transitions where there are 15 -
+# a checker counting its own furniture.
+rows = [r for r in rows if r and r[0] and ("→" in str(r[0]) or "->" in str(r[0]))]
+# Round 7 (C049): the workbook renamed the two reverse-effect verdicts DISCORDANT /
+# DISCORDANT_CAVEATED to REVERSE_SUPPORTED / REVERSE_CAVEATED, matching the manuscript's own words
+# ("directionally supported reverse association", "statistically supported but pleiotropy-caveated").
+# This check reads the WORKBOOK, so it asserts the new vocabulary; the analysis CSVs keep the
+# original tokens because main Figure 1 maps them to colours.
+DIS = lambda v: bool(v) and str(v).startswith("REVERSE_")
 prim_dis = [r[0] for r in rows if DIS(r[3])]
 # The workbook now typesets the edge key (build_supp_tables.typeset), so compare on the
 # NOTATION-INDEPENDENT form; this check is about which transitions are discordant, not about

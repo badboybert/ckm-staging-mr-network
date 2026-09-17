@@ -89,7 +89,9 @@ arrows <- data.frame(
 
 alab <- data.frame(
   x   = c(  52,   30,   30,   69.5),
-  y   = c(  80,   62,   38,   54),
+  # Round-7: the red strap line sat 6 units under the second subtitle and their glyph boxes touched
+  # (caught by the new overlapping-text gate). Dropped to 77 for clear separation.
+  y   = c(  77,   62,   38,   54),
   txt = c(sprintf("CAD-INDEPENDENT  %s log-odds/SD  (~%.0f%% not mediated via CAD)",
                   lab(bmi_hf_direct), 100 - bmi_pm),
           sprintf("%s (total)", lab(getb("BMI", "CAD"))),

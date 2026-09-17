@@ -27,7 +27,7 @@ CKM_ROOT = _os.environ.get("CKM_ROOT") or _os.path.dirname(P4_ROOT)
 SHARED_LIB = _os.environ.get("CKM_SHARED_LIB") or _os.path.join(CKM_ROOT, "_shared")
 # ------------------------------------------------------------------------------------------------
 
-import os, re, sys, csv, json, glob, zlib, hashlib, subprocess, math
+import os, time, re, sys, csv, json, glob, zlib, hashlib, subprocess, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_vancouver as VAN
 
@@ -45,6 +45,9 @@ _mv = re.search(r'^PKG_VERSION\s*=\s*"([^"]+)"', _bsv, flags=re.M)
 assert _mv, "could not read PKG_VERSION from build_submission_v1.py"
 PKG_VERSION = _mv.group(1)   # DERIVED, never typed: a gate pointed at a stale package is worse than none
 PKG = os.path.join(ROOT, f"submission package {PKG_VERSION}")
+# A mutation ladder must run this gate against a COPY of the package, never the real one, so the
+# target is overridable for that purpose only (the default is always the shipped package).
+PKG = os.environ.get("CKM_PKG_OVERRIDE", PKG)
 
 FAILS, NOTES = [], []
 def fail(m): FAILS.append(m)
@@ -152,9 +155,14 @@ for p in ALL:
         for m in re.finditer(pat, t, flags=flags):
             frag = " ".join(t[max(0, m.start() - 45):m.start() + 55].split())
             fail(f"GATE A [{why}] {r}: ...{frag}...")
-    for m in re.finditer(r"\[AUTHOR-SUPPLIED[^\]]*\]|\[Author list to be supplied\]|"
-                         r"\[GitHub URL[^\]]*\]|\[AUTHOR-SUPPLIED\]", t):
+    for m in re.finditer(r"\[AUTHOR-SUPPLIED[^\]]*\]|\[GitHub URL[^\]]*\]|\[AUTHOR-SUPPLIED\]", t):
         placeholders.append((r, " ".join(m.group(0).split())[:70]))
+    # Round-7 C002: "[Author list to be supplied]" used to be listed here as an intentional,
+    # tracked placeholder. It was not tracked anywhere, and it shipped on page 1 of the manuscript
+    # through six review rounds. A missing author list is a FAILURE, not a note.
+    if "to be supplied" in t or re.search(r"\[Author list[^\]]*\]", t):
+        fail(f"GATE A [author list placeholder] {r}: the journal-facing text still carries an "
+             f"unresolved author placeholder")
 
 # ================= GATE B — cross-file identity =================
 # B1: every copied file must be md5-identical to the file it came from.
@@ -735,36 +743,36 @@ for k, t in _SURF.items():
 for k, t in _PDFS.items():
     if re.search(r"%\s*DIRECT", t):
         fail(f"GATE F [unqualified '% DIRECT' panel label] {k}")
-# F3. The synthesis panel's evidence tiers. Staging is bounded by a non-significant degree-preserving
-#     null, so it cannot sit in the highest tier; only the BMI row may. Assert the COUNT, because the
-#     row text had been corrected while the tier label beside it had not.
-_s7 = _PDFS.get("04_supplementary/SupplFig7.pdf", "")
-if not _s7:
-    fail("GATE F [scope] SupplFig7.pdf text layer not readable")
+# F3. The graded evidence synthesis. Round-7 Q7 promoted it from a text panel inside Supplementary
+#     Figure S7 to main-text Table 1 (scripts/build_tables.py), because a six-line summary of the
+#     paper's whole evidence base does not belong in a supplementary lipid figure - and the panel and
+#     the Results paragraph that restated it had drifted into disagreeing about the East Asian
+#     staging order. The requirement is unchanged and now checked where the claim lives: staging is
+#     bounded by a non-significant degree-preserving null, so it may never sit in the top tier.
+_tab1 = _TXT.get("01_manuscript/TABLES.md", "")
+_tab1_docx = _TXT.get("01_manuscript/CKM_Paper4_manuscript.docx", "")
+if not _tab1:
+    fail("GATE F [evidence tiers] 01_manuscript/TABLES.md is missing from the package")
 else:
-    # The expected count is DERIVED from the renderer's own tier vector, never typed here: a literal
-    # would have to be edited by hand every time the synthesis strip is re-graded, and a hand-edited
-    # expectation is how a gate stops asserting anything. fig6.R itself carries the one assertion
-    # that is a claim about the evidence (the AHA-staging row may never be top-tier).
-    _fig6 = rd(os.path.join(FIG, "fig6.R"))
-    _mt = re.search(r"tier=c\(([^)]*)\)", _fig6)
-    if not _mt:
-        fail("GATE F [evidence tiers] could not read the tier vector from fig6.R")
+    _rows = [ln for ln in _tab1.split("\n") if ln.startswith("| **")]
+    if len(_rows) < 8:
+        fail(f"GATE F [evidence tiers] Table 1 has only {len(_rows)} graded rows")
+    _staging = [ln for ln in _rows if "AHA stage ordering" in ln]
+    if len(_staging) != 1:
+        fail(f"GATE F [evidence tiers] Table 1 has {len(_staging)} staging rows; expected exactly 1")
     else:
-        _tiers = re.findall(r'"([^"]+)"', _mt.group(1))
-        _expect_hi = sum(1 for t in _tiers if t.startswith("HIGHER CONF"))
-        _n_hi = len(re.findall(r"HIGHER CONF", _s7))
-        if _n_hi != _expect_hi:
-            fail(f"GATE F [evidence tiers] SupplFig7.pdf shows {_n_hi} HIGHER CONF. rows but fig6.R "
-                 f"assigns {_expect_hi} — the rendered panel is stale or the renderer changed")
-        # Do NOT re-implement "which row is staging" by position here — that assumption would go
-        # stale silently the next time a row is added. fig6.R asserts it at render time and ABORTS
-        # the render if it fails; this gate asserts only that the guard is still in the renderer.
-        if not re.search(r'stopifnot\(tier\$tier\[grep\("AHA staging"', _fig6):
-            fail("GATE F [evidence tiers] fig6.R has lost its render-time assertion that the "
-                 "AHA-staging row is not in the top tier")
-    if "not beyond a degree-preserving null" not in _s7:
-        fail("GATE F [evidence tiers] SupplFig7 staging row must state the degree-preserving bound")
+        if _staging[0].startswith("| **Higher confidence**"):
+            fail("GATE F [evidence tiers] Table 1 puts the AHA staging claim in the top tier, which "
+                 "the degree-preserving null does not support")
+        if "degree-preserving rewiring null" not in _staging[0]:
+            fail("GATE F [evidence tiers] the Table 1 staging row must state the degree-preserving bound")
+    # the generator must keep asserting its own tier vocabulary, or the table can be re-graded silently
+    _bt = rd(os.path.join(BASE, "scripts", "build_tables.py"))
+    if "TIERS = [" not in _bt or "assert all(t[0] in TIERS" not in _bt:
+        fail("GATE F [evidence tiers] build_tables.py has lost its tier-vocabulary assertion")
+    # and the table must actually reach the shipped manuscript, not only its .md twin
+    if "Graded synthesis of the study" not in _tab1_docx:
+        fail("GATE F [evidence tiers] Table 1 is not rendered into the shipped manuscript .docx")
 # F4. Panel labels that assert more than the test behind them supports.
 for _pat, _why in [(r"resolved in Fig", "Figure 3 grades these edges, it does not resolve them"),
                    (r"T2D reaches HFrEF,\s*not HFpEF",
@@ -817,10 +825,158 @@ else:
     if not _seen:
         fail(f"GATE F [graph size] no surface states the size of the Steiger-directed graph "
              f"({_n_graph} edges) — the claim was removed rather than corrected")
+    # The same count is also stated in PROSE form -- "58 met the Bonferroni threshold and 54 of
+    # those were also Steiger-direction-correct". The "<n>-edge" pattern above does not match that
+    # phrasing, so the STROBE checklist shipped "53 of those ... forming the 54-edge graph", self-
+    # contradictory, through the whole HbA1c correction. Complete file coverage cannot rescue a
+    # pattern nobody wrote: scope has two axes, and this is the second one.
+    _PROSE = re.compile(r"(\d+)\s+of\s+(?:those|which|them)\s+(?:were|are|was|is)\s+also\s+"
+                        r"Steiger[- ]direct", re.I)
+    _prose_seen = 0
+    for k, t in _SURF.items():
+        for m in _PROSE.finditer(t):
+            _prose_seen += 1
+            if int(m.group(1)) != _n_graph:
+                fail(f"GATE F [graph size] {k} says {m.group(1)} of the Bonferroni-significant "
+                     f"edges are Steiger-direction-correct; fig1_edges.csv contains {_n_graph}")
+    if not _prose_seen:
+        fail("GATE F [graph size] no surface states how many Bonferroni-significant edges are "
+             f"Steiger-direction-correct ({_n_graph}) -- STROBE-MR item 10a requires the count")
+
     # and the Bonferroni count, derived the same way from derive_facts rather than typed
     _n_bonf = F["edges_passing_bonferroni"]
     if str(_n_bonf) not in _TXT.get("01_manuscript/RESULTS.md", ""):
         fail(f"GATE F [Bonferroni count] RESULTS must state the derived count {_n_bonf}")
+
+# F30. NUMBERS-VS-SOURCE for the mediated proportions, and cross-surface identity for the range.
+#      Table 1 shipped "37-142%" against "38-142%" everywhere else, because build_tables.py read
+#      fig2_mediation.csv's ALREADY-ROUNDED pm_lo (37) and re-emitted it, while the full-precision
+#      sweep says 37.61 -- which rounds to 38. Same defect class as the +0.41/+0.42 graphical
+#      abstract: read from the canonical source, never from a lossier copy. A gate that only
+#      compared the surfaces to each other would have been satisfied by all four printing 37.
+_sweep_csv = os.path.join(BASE, "results", "mediation_covariance_sensitivity.csv")
+if not os.path.exists(_sweep_csv):
+    fail("GATE F [mediation range] results/mediation_covariance_sensitivity.csv missing; "
+         "cannot check the mediated proportion against its source")
+else:
+    import csv as _csv2
+    with open(_sweep_csv, encoding="utf-8") as _fh:
+        _sw = [r for r in _csv2.DictReader(_fh)
+               if all(float(r[k]) == 0 for k in ("rho_ab", "rho_total_direct", "rho_a_total"))]
+    _want = {}
+    for _r in _sw:
+        _want[_r["exposure"]] = (f'{float(_r["pm_product_lo"]):.0f}'
+                                 f'–{float(_r["pm_product_hi"]):.0f}%')
+    _t2d = _want.get("T2D")
+    if not _t2d:
+        fail("GATE F [mediation range] no T2D independence row in the covariance sweep")
+    else:
+        # every surface that states a T2D mediated range must state THIS one
+        _rng = re.compile(r"(\d{2})[–-](\d{2,3})%")
+        _seen_any = False
+        for k, txt in _SURF.items():
+            for m in _rng.finditer(txt):
+                if not m.group(0).endswith("142%"):
+                    continue
+                _seen_any = True
+                if m.group(0) != _t2d:
+                    fail(f"GATE F [mediation range] {k} states {m.group(0)}; the full-precision "
+                         f"sweep at independence gives {_t2d}")
+        if not _seen_any:
+            fail(f"GATE F [mediation range] no surface states the T2D mediated proportion "
+                 f"({_t2d}) -- the claim was removed rather than corrected")
+
+# F31. A DESCRIBING DOCUMENT MUST NOT BE OLDER THAN WHAT IT DESCRIBES, and its locative claims
+#      must be true. STROBE item 15 does not merely list the limitations, it says WHERE they are:
+#      "the closing limitations paragraph". Round 8 split that paragraph into three; nothing was
+#      deleted, so the item's CONTENT stayed true while its LOCATION went false, and the checklist
+#      shipped to the editor describing a structure the manuscript no longer had. Every gate passed,
+#      because nothing compared the checklist against the section it describes.
+_desc_src = os.path.join(BASE, "figures", "STROBE_MR_CHECKLIST.md")
+_described = [os.path.join(BASE, "figures", f)
+              for f in ("DISCUSSION.md", "RESULTS.md", "METHODS.md", "CONCLUSIONS.md")]
+if not os.path.exists(_desc_src):
+    fail("GATE F [describing doc] figures/STROBE_MR_CHECKLIST.md missing")
+else:
+    _dt = os.path.getmtime(_desc_src)
+    for _p in _described:
+        if os.path.exists(_p) and os.path.getmtime(_p) > _dt + 1:
+            fail(f"GATE F [describing doc] STROBE_MR_CHECKLIST.md is OLDER than "
+                 f"{os.path.basename(_p)} it describes "
+                 f"({time.strftime('%H:%M', time.localtime(_dt))} vs "
+                 f"{time.strftime('%H:%M', time.localtime(os.path.getmtime(_p)))}) — regenerate it")
+
+    # The locative half: how many paragraphs of the SHIPPED Discussion are limitations paragraphs,
+    # and does the checklist say that number? Counting is by the paragraph's own opening, which is
+    # how a reader identifies one.
+    # Count the limitations paragraphs from an explicit SOURCE MARKER, not from their opening
+    # words. v1 of this gate matched openings, and the first rebalance that renamed one made it
+    # report 1 where there were 2 -- red for the right reason, with a number that would have sent
+    # someone to "fix" the prose. The marker is an HTML comment and is stripped before shipping.
+    with open(os.path.join(BASE, "figures", "DISCUSSION.md"), encoding="utf-8") as _fh:
+        _dsrc = _fh.read()
+    _n = _dsrc.count("<!-- LIMITATIONS -->")
+    if _n == 0:
+        fail("GATE F [describing doc] no <!-- LIMITATIONS --> marker in figures/DISCUSSION.md; "
+             "the limitations paragraphs must be marked so the checklist count can be checked")
+    if "LIMITATIONS" in _TXT.get("01_manuscript/DISCUSSION.md", ""):
+        fail("GATE F [describing doc] the LIMITATIONS marker reached the shipped Discussion")
+    _claim = re.search(r"Discussion, the (closing limitations paragraph|"
+                       r"(?:two|three|four) closing limitations paragraphs)",
+                       _TXT.get("02_cover_declarations/STROBE_MR_CHECKLIST.md", ""))
+    if not _claim:
+        fail("GATE F [describing doc] STROBE item 15 no longer says where the limitations live")
+    else:
+        _words = {"closing limitations paragraph": 1, "two closing limitations paragraphs": 2,
+                  "three closing limitations paragraphs": 3, "four closing limitations paragraphs": 4}
+        _said = _words.get(_claim.group(1))
+        if _said != _n:
+            fail(f"GATE F [describing doc] STROBE item 15 locates the limitations in "
+                 f"{_said} paragraph(s); the shipped Discussion has {_n}")
+
+# F32. The shipped ancestry-interaction table must agree with the canonical renal source.
+#      fig5_interaction.csv's renal rows predate the round-7 re-estimation and shipped 0.4315 /
+#      0.0709 against the manuscript's 0.55 / 0.15 -- in 05_source_data AND inside Source_Data.zip.
+#      Nothing caught it because every existing check compared a file against ITSELF or against the
+#      prose; none compared two deposit files that describe the same quantity.
+_f5 = os.path.join(PKG, "05_source_data", "fig5_interaction.csv")
+_rc = os.path.join(PKG, "05_source_data", "renal_contrast.csv")
+if not (os.path.exists(_f5) and os.path.exists(_rc)):
+    fail("GATE F [interaction vs renal] fig5_interaction.csv or renal_contrast.csv missing "
+         "from 05_source_data")
+else:
+    import csv as _csv3
+    with open(_rc, encoding="utf-8") as _fh:
+        _rcrows = list(_csv3.DictReader(_fh))
+    with open(_f5, encoding="utf-8") as _fh:
+        _f5rows = {r["edge"]: r for r in _csv3.DictReader(_fh)}
+
+    def _arm(_exp, _src):
+        _r = [x for x in _rcrows if x["exposure"] == _exp and x["source"] == _src]
+        return (float(_r[0]["b_perSD"]), float(_r[0]["se_perSD"])) if len(_r) == 1 else None
+
+    for _exp in ("SBP", "BMI"):
+        _key = f"{_exp}\u2192CKD"
+        _e, _a = _arm(_exp, "EUR"), _arm(_exp, "EAS_BBJ")
+        if _key not in _f5rows or not _e or not _a:
+            fail(f"GATE F [interaction vs renal] cannot reconcile {_key}: "
+                 f"row present={_key in _f5rows}, EUR={bool(_e)}, EAS={bool(_a)}")
+            continue
+        _z = (_e[0] - _a[0]) / math.sqrt(_e[1] ** 2 + _a[1] ** 2)
+        _p = math.erfc(abs(_z) / math.sqrt(2))
+        _shipped = float(_f5rows[_key]["p_int"])
+        if abs(_shipped - _p) > 1e-3:
+            fail(f"GATE F [interaction vs renal] fig5_interaction.csv gives {_key} p_int="
+                 f"{_shipped:.4f}; renal_contrast.csv supports {_p:.4f} — the interaction table is "
+                 f"stale against the canonical renal source")
+        # and the prose must quote the canonical value, not the table's
+        for _k, _txt in _TXT.items():
+            if not _k.startswith("01_manuscript/"):
+                continue
+            for _m in re.finditer(re.escape(_key) + r"\s*\*?P\*?\s*=\s*([0-9.]+)", _txt):
+                if abs(float(_m.group(1)) - _p) > 0.01:
+                    fail(f"GATE F [interaction vs renal] {_k} states {_key} P = {_m.group(1)}; "
+                         f"renal_contrast.csv supports {_p:.2f}")
 
 # F8. Supplementary Methods must reach BOTH shipped twins, and must not be duplicated in the main
 #     Methods. The move was deferred for exactly this reason: SUPPLEMENTARY_INFORMATION.md is written
@@ -1047,8 +1203,10 @@ _DIALECT_AE = [("ischaem", "ischem"), ("aetiolog", "etiolog"), ("haemodynam", "h
                ("oedema", "edema"), ("oestrog", "estrog"), ("paediatr", "pediatr"),
                ("foetal", "fetal"), ("anaemi", "anemi"), ("haemostas", "hemostas")]
 _SUF_AE = r"(?:ic|ics|ical|ically|y|ies|en|ens|a|as|is|ous|ed|es|s)?"
-# NOT a generic -aemia/-emia rule: glycemia, dysglycemia and dyslipidemia are used consistently in
-# the American form throughout as terms of art, and a blanket pattern would report them as defects.
+# R6 (2026-08-20): the metabolic terms glycaemia / dysglycaemia / dyslipidaemia were harmonised to
+# British to match the manuscript's register (haemoglobin / ischaemic / favoured / aetiology); the
+# earlier "deliberately American" stance is retired. Enforced by the substring guard below, because
+# the \b-anchored variant-pair machinery cannot reach the "dys-" prefix or the adjectival "-ic".
 # fixed field terms and proper nouns that are NOT dialect choices
 _DIA_OK = re.compile(r"Mendelian[- ]randomi[sz]ation|GWAS Catalog|Conceptualization|"
                      r"Medical Cent(?:er|re)|Center for Bioenergetics|harmonise_data", re.I)
@@ -1081,6 +1239,28 @@ if _br + _am < 50:
 elif _br and _am:
     fail(f"GATE F [mixed dialect] {_br} British vs {_am} American variant tokens; the minority set "
          f"is {sorted({h for _, h in _am_hits})[:8]}")
+
+# R6 metabolic-dialect regression guard (substring; see comment above). The \b-anchored machinery
+# cannot reach "dysglycaemia" (mid-word) or the "-ic" ending, so assert the American forms directly.
+for _k, _t in _READER.items():
+    if "REFERENCES" in _k:
+        continue
+    if _k.endswith("CKM_Paper4_manuscript.docx"):
+        # docx_text appends ALL table cells AFTER all paragraphs, so cutting the merged text at
+        # "References" also drops the table cells — that is how a stale "dysglycemia" in the Research
+        # Insights box (a table cell) escaped this gate in one R6 build. Read paragraphs and cells
+        # separately: cut the paragraph stream at References (reference titles live there and
+        # legitimately spell "glycemic traits"); scan the table cells uncut (no reference titles there).
+        _doc = Document(os.path.join(PKG, _k.replace("/", os.sep)))
+        _para = "\n".join(p.text for p in _doc.paragraphs)
+        _cp = re.search(r"^References\s*$", _para, flags=re.M)
+        if _cp:
+            _para = _para[:_cp.start()]
+        _t = _para + "\n" + "\n".join(c.text for tb in _doc.tables for r in tb.rows for c in r.cells)
+    _mh = sorted({m.group(0) for m in re.finditer(r"(?:dys)?glycemi[a-z]*|lipidemi[a-z]*", _t, re.I)})
+    if _mh:
+        fail(f"GATE F [dialect] American metabolic spelling {_mh[:4]} in {_k}; R6 harmonised these "
+             f"to British (glycaemia / dysglycaemia / dyslipidaemia)")
 
 # F20. CROSS-REPRESENTATION. An artifact has representations, and a gate over one says nothing about
 #      the others. Every .md/.docx twin must carry the same numbers, the same figure/table callouts
@@ -1193,6 +1373,43 @@ else:
         fail(f"GATE F [graphical abstract] the Abstract does not state {_want}, so the figure and "
              f"the manuscript cannot both be right")
 
+# R6 (2026-08-20): F22 above reads only the PDF TEXT LAYER. The defect it is named for lived in the PNG
+# RASTER — the journal-facing format — which a SEPARATE, stale render had left printing +0.41 while the
+# PDF printed +0.42. No OCR is available here to read the raster's text, so assert the two twins were
+# CO-GENERATED: graphical_abstract.R writes the PNG and PDF from one ggplot object in a single run,
+# seconds apart, and the package copies both with copy2 (mtime preserved). A stale separately-written
+# PNG diverges in mtime. Also assert the PNG is a valid 920x300 raster.
+import struct as _struct
+_ga_png = os.path.join(PKG, "03_main_figures", "GraphicalAbstract.png")
+_ga_pdf_p = os.path.join(PKG, "03_main_figures", "GraphicalAbstract.pdf")
+if os.path.exists(_ga_png) and os.path.exists(_ga_pdf_p):
+    with open(_ga_png, "rb") as _fh:
+        _hdr = _fh.read(24)
+    if _hdr[:8] != b"\x89PNG\r\n\x1a\n":
+        fail("GATE F [graphical abstract] GraphicalAbstract.png is not a valid PNG raster")
+    else:
+        _wpx, _hpx = _struct.unpack(">II", _hdr[16:24])
+        if (_wpx, _hpx) != (920, 300):
+            fail(f"GATE F [graphical abstract] the PNG raster is {_wpx}x{_hpx}, not the CVD 920x300")
+    _dt = abs(os.path.getmtime(_ga_png) - os.path.getmtime(_ga_pdf_p))
+    if _dt > 120:
+        fail(f"GATE F [graphical abstract] the PNG and PDF twins were not co-generated ({_dt:.0f}s "
+             f"apart); the PNG raster may be a stale render diverging from the +{_want} PDF")
+else:
+    fail("GATE F [graphical abstract] the GraphicalAbstract PNG/PDF twins are not both present")
+
+# F25. REVISION-HISTORY / REVIEWER-RESPONSE LANGUAGE (R6, 2026-08-20). The round-6 review found the
+# Results and Discussion still narrating internal corrections. A first submission must read as a
+# description of the current analysis, so these literal phrases are banned on every shipped surface.
+_HISTORY = ["correcting a recurring hazard", "recurring hazard in CKM MR", "survived the crossing",
+            "we therefore reframe", "we now re-read", "coronary-proxy value had overstated",
+            "fixed in advance from the staging", "hold deliberately hedged", "resembled a web"]
+for k, t in _READER.items():
+    for _h in _HISTORY:
+        if _h in t:
+            fail(f"GATE F [revision-history language] '{_h}' in {k}; a first submission must describe "
+                 f"the current analysis, not narrate corrections")
+
 # F6. Cardiovascular Diabetology requires LLM use to be documented in Methods. Assert the section is
 #     present and names both the assistance and the author's responsibility - not merely the word.
 _meth = _TXT.get("01_manuscript/METHODS.md", "")
@@ -1200,6 +1417,180 @@ if not re.search(r"large language model", _meth, re.I):
     fail("GATE F [LLM disclosure] METHODS must document any LLM use (journal requirement)")
 elif not re.search(r"full responsibility", _meth, re.I):
     fail("GATE F [LLM disclosure] the disclosure must affirm author responsibility")
+# F26. FIGURE GEOMETRY (round-7 C033). Cardiovascular Diabetology prints figures at a maximum of
+#      170 mm wide and 225 mm tall INCLUDING the legend. Every main and supplementary figure shipped
+#      at 183 mm wide and up to 262 mm tall for six rounds because no checker asserted the house
+#      rule - the journal would have scaled them down, dropping 5 pt annotations to under 4 pt.
+#      Measured on the SHIPPED PDF, which is the file the typesetter uses.
+MAX_W_MM, MAX_H_MM = 170.0, 225.0
+_PDF_PATHS = [p for p in ALL if p.lower().endswith(".pdf")]
+
+# F33. EVERY LITERAL A FIGURE DRAWS MUST BE VISIBLE ON THE PAGE.
+#      Figure 3 drew "attenuates -0.31->-0.16" and the page showed "attenuates -0": the label ran
+#      past the panel clip and lost three characters mid-number. A content-stream check sees the
+#      full string and passes, which is why every figure gate here passed for three rounds. Only a
+#      clip-aware reader catches it, so this gate compares the two.
+try:
+    import fitz as _fitz33
+except Exception:
+    fail("GATE F [clipped text] PyMuPDF unavailable; cannot check figures for clipped labels")
+    _fitz33 = None
+if _fitz33 is not None:
+    _LIT33 = re.compile(rb"\((?:[^()\\]|\\.)*\)", re.S)
+    for _fp in sorted(_PDF_PATHS):
+        try:
+            _doc = _fitz33.open(_fp)
+        except Exception as _e:
+            fail(f"GATE F [clipped text] cannot open {os.path.basename(_fp)}: {_e}")
+            continue
+        _vis = "\n".join(_pg.get_text() for _pg in _doc)
+        # liveness: a reader that recovers nothing would pass every comparison below
+        if len(_vis.strip()) < 20:
+            fail(f"GATE F [clipped text] {os.path.basename(_fp)}: the page reader recovered "
+                 f"{len(_vis.strip())} characters — treat as UNCHECKED, not clean")
+            _doc.close()
+            continue
+        _raw = b""
+        for _x in range(1, _doc.xref_length()):
+            try:
+                _s = _doc.xref_stream(_x)
+            except Exception:
+                continue
+            if _s and (b"Tj" in _s or b"TJ" in _s):
+                _raw += _s
+        for _m in _LIT33.finditer(_raw):
+            # Resolve PDF escapes on BYTES, then decode cp1252 (WinAnsi) -- non-ASCII glyphs are
+            # written as OCTAL escapes (\327 multiplication sign, \226 en dash, \267 middle dot),
+            # and comparing the raw literal makes every label containing one look truncated at it.
+            _b = _m.group(0)[1:-1]
+            _b = re.sub(rb"\\([0-7]{1,3})", lambda _o: bytes([int(_o.group(1), 8) & 0xFF]), _b)
+            _b = _b.replace(b"\\(", b"(").replace(b"\\)", b")").replace(b"\\\\", b"\\")
+            _clean = _b.decode("cp1252", errors="replace")
+            # only alphanumeric-bearing strings of real length: font names and operators are noise
+            if len(_clean) < 6 or not re.search(r"[A-Za-z]", _clean) or not re.search(r"\d", _clean):
+                continue
+            if _clean in _vis:
+                continue
+            _keep = ""
+            for _i in range(len(_clean), 0, -1):
+                if _clean[:_i] in _vis:
+                    _keep = _clean[:_i]
+                    break
+            if _keep and len(_keep) < len(_clean):
+                fail(f"GATE F [clipped text] {os.path.basename(_fp)} draws {_clean!r} but the page "
+                     f"shows only {_keep!r} — {len(_clean) - len(_keep)} character(s) clipped")
+        _doc.close()
+
+# F34. THE FRAGILITY ANALYSIS MUST COVER THE GRAPH ITS CAPTION CLAIMS, and the prose minimum must be
+#      that file's minimum. S20 said "every edge in the staging graph" over 34 of 54, and "smallest
+#      margin anywhere is 1.92x" when the true minimum over all 54 is 1.06x -- the 20 excluded edges
+#      were the continuous-to-continuous pairs most likely to be fragile.
+_marg_csv = os.path.join(BASE, "results", "steiger_margin.csv")
+_edge_csv = os.path.join(BASE, "figures", "data", "fig1_edges.csv")
+if not (os.path.exists(_marg_csv) and os.path.exists(_edge_csv)):
+    fail("GATE F [margin scope] steiger_margin.csv or fig1_edges.csv missing")
+else:
+    import csv as _csv34
+    with open(_marg_csv, encoding="utf-8") as _fh:
+        _mrows = list(_csv34.DictReader(_fh))
+    with open(_edge_csv, encoding="utf-8") as _fh:
+        _erows = list(_csv34.DictReader(_fh))
+    _mk = {(r["exposure"], r["outcome"]) for r in _mrows}
+    _ek = {(r["exp"], r["out"]) for r in _erows}
+    if _mk != _ek:
+        fail(f"GATE F [margin scope] the margin table covers {len(_mk)} of the staging graph's "
+             f"{len(_ek)} edges; missing {sorted(_ek - _mk)[:6]}")
+    _mmin = min(float(r["margin"]) for r in _mrows)
+    _mstr = f"{_mmin:.2f}"
+    for _k in ("01_manuscript/METHODS.md", "02_cover_declarations/STROBE_MR_CHECKLIST.md"):
+        _txt = _TXT.get(_k, "")
+        for _m in re.finditer(r"smallest (?:margin[^.]{0,40}|value[^.]{0,20})(?:is|being)\s*"
+                              r"([0-9.]+)\u00d7", _txt):
+            if _m.group(1) != _mstr:
+                fail(f"GATE F [margin scope] {_k} states a smallest margin of {_m.group(1)}\u00d7; "
+                     f"steiger_margin.csv gives {_mstr}\u00d7")
+
+try:
+    import fitz as _fitz
+    _geom_checked = 0
+    for _p in _PDF_PATHS:
+        _d = _fitz.open(_p)
+        _r = _d[0].rect
+        _w, _h = _r.width / 72 * 25.4, _r.height / 72 * 25.4
+        _d.close()
+        _geom_checked += 1
+        if os.path.basename(_p).startswith("GraphicalAbstract"):
+            continue                      # the graphical abstract has its own 920 x 300 px rule (F22)
+        if _w > MAX_W_MM + 0.5 or _h > MAX_H_MM + 0.5:
+            fail(f"GATE F [figure geometry] {rel(_p)} is {_w:.1f} x {_h:.1f} mm, outside the "
+                 f"journal's {MAX_W_MM:.0f} x {MAX_H_MM:.0f} mm envelope")
+    if _geom_checked != len(_PDF_PATHS):
+        fail(f"GATE F [figure geometry] measured {_geom_checked} of {len(_PDF_PATHS)} figure PDFs")
+
+    # F27. NO OVERLAPPING TEXT ON A FIGURE PAGE (round-7 C029). Figure 3 shipped with panel a's
+    #      x-axis title printed over panel b's, and a legend key struck through by another legend,
+    #      in BOTH the raster and the vector copy - invisible to every text-layer check, because the
+    #      characters were all present. Overlap is a geometric property, so measure it.
+    for _p in _PDF_PATHS:
+        _d = _fitz.open(_p)
+        _d0 = _d[0]
+        # A word-level bbox is tight; a SPAN bbox can cover a whole column of stacked tick labels and
+        # produce false positives, so this works on words. Single characters and math operators are
+        # exempt: a plotmath expression such as beta[EAS] == 0.436 %*% beta[EUR] typesets its
+        # subscript and operators deliberately tight, and flagging those would make the gate cry wolf.
+        _OPS = {"=", "×", "+", "−", "-", "(", ")", ",", "·"}
+        _words = [(_fitz.Rect(_w[:4]), _w[4].strip()) for _w in _d0.get_text("words") if _w[4].strip()]
+        _bad = []
+        for _i in range(len(_words)):
+            _r1, _t1 = _words[_i]
+            if len(_t1) < 2 or _t1 in _OPS:
+                continue
+            for _j in range(_i + 1, len(_words)):
+                _r2, _t2 = _words[_j]
+                if len(_t2) < 2 or _t2 in _OPS or _t1 == _t2:
+                    continue
+                _inter = _r1 & _r2
+                if _inter.is_empty:
+                    continue
+                if _inter.get_area() > 0.30 * min(_r1.get_area(), _r2.get_area()):
+                    _bad.append(f"{_t1[:28]!r} over {_t2[:28]!r}")
+        _d.close()
+        if _bad:
+            fail(f"GATE F [overlapping text] {rel(_p)}: {len(_bad)} overprinted word pair(s), "
+                 f"first: {_bad[0]}")
+except ImportError:
+    fail("GATE F [figure geometry] PyMuPDF is not installed - the geometry and overlap gates "
+         "cannot run")
+
+# F28. THE MANUSCRIPT CARRIES ITS OWN AUTHOR LIST (round-7 C002). The title page had the four
+#      authors all along; the manuscript, which is the file the editorial office reads first, had a
+#      bracketed placeholder. Assert the two agree, from the artifact, not from the builder.
+_man_txt = _TXT.get("01_manuscript/CKM_Paper4_manuscript.docx", "")
+_tp_txt = _TXT.get("02_cover_declarations/TITLE_PAGE.docx", "")
+if _man_txt and _tp_txt:
+    _fm = rd(os.path.join(FIG, "FRONT_MATTER.md"))
+    _ma = re.search(r"##\s*Authors\s*\n(.+?)\n\s*\n", _fm, flags=re.S)
+    if not _ma:
+        fail("GATE F [author list] FRONT_MATTER.md has no Authors block to check against")
+    else:
+        # strip the ^1,2^ affiliation markers BEFORE splitting, or the commas INSIDE them split a
+        # name in half ("Son Tung Nguyen^1" / "2^") and the gate compares nonsense.
+        _names = [x.strip() for x in re.sub(r"\^[^^]*\^", "", _ma.group(1)).split(",") if x.strip()]
+        for _n in [x for x in _names if x]:
+            if _n not in _man_txt:
+                fail(f"GATE F [author list] '{_n}' is on the title page but not in the manuscript")
+            if _n not in _tp_txt:
+                fail(f"GATE F [author list] '{_n}' is in FRONT_MATTER but not on the title page")
+
+# F29. THE AI-USE DISCLOSURE NAMES EVERY TOOL (round-7 C001, PI decision Q1 2026-09-16). A
+#      disclosure that names one tool while another contributed text is a research-integrity
+#      defect, so the tools the authors declared are asserted by name.
+_AI_TOOLS = ["Anthropic Claude", "OpenAI ChatGPT"]
+_meth_ai = _TXT.get("01_manuscript/METHODS.md", "")
+for _tool in _AI_TOOLS:
+    if _tool not in _meth_ai:
+        fail(f"GATE F [AI disclosure] the Methods disclosure does not name {_tool}")
+
 if NOTES:
     print("\nLength notes (author decision, not gate failures):")
     for n_ in NOTES:

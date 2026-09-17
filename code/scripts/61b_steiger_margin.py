@@ -84,7 +84,9 @@ def main():
     out("")
     out(f"Edges with margin < 1.5 (would be genuinely fragile): {len(frag)}"
         + (f" - {[r['exposure']+'->'+r['outcome'] for r in frag]}" if frag else ""))
-    out(f"Smallest margin in the whole staging graph: {mn['exposure']}->{mn['outcome']} at "
+    out(f"Smallest margin among the {len(out_rows)} edges with a binary endpoint "
+        f"(step 61c covers the continuous-to-continuous remainder): "
+        f"{mn['exposure']}->{mn['outcome']} at "
         f"{mn['margin']:.2f}x.")
     out("")
     out("READ (honest):")

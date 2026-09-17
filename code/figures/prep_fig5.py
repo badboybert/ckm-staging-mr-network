@@ -37,19 +37,26 @@ def check(name, got, want, tol):
     if want is not None and abs(float(got) - want) > tol:
         raise SystemExit(f"FIG5 PREP: {name} derived {got} but the figure draws {want}")
 
-# ---------- 5a: SBP/BMI -> CKD, EUR vs EAS (results/zheng_ckd.txt) ----------
-txt = io.open(os.path.join(RES, "zheng_ckd.txt"), encoding="utf-8").read()
-want_a = {("EUR", "SBP"): (0.0143, 0.0017, 1.1e-17), ("EAS", "SBP"): (0.0979, 0.2240, 6.62e-1),
-          ("EUR", "BMI"): (0.1429, 0.0286, 5.6e-7),  ("EAS", "BMI"): (0.4081, 0.1440, 4.6e-3)}
-for m in re.finditer(r"(EUR|EAS)\s+(SBP|BMI)->CKD\s*:\s*nSNP=\s*(\d+)\s+IVW b=([+-][\d.]+)\s+"
-                     r"se=([\d.]+)\s+p=([\d.eE+-]+)", txt):
-    anc, exp, _n, b, se, p = m.groups()
-    w = want_a[(anc, exp)]
-    check(f"5a {anc} {exp}->CKD b", b, w[0], 1e-4)
-    check(f"5a {anc} {exp}->CKD se", se, w[1], 1e-4)
-    add("a", f"{exp} → CKD {anc}", f"{exp} → CKD", anc, b, se, p, "results/zheng_ckd.txt")
-if len([r for r in rows if r["panel"] == "a"]) != 4:
-    raise SystemExit("FIG5 PREP: expected 4 rows for panel a from zheng_ckd.txt")
+# ---------- 5a: SBP/BMI -> CKD across every kidney outcome the study has (results/renal_contrast.csv)
+# Round-7 C003/C039/C121: this panel used to read results/zheng_ckd.txt - a fixed-effect Python IVW,
+# while the rest of the paper is TwoSampleMR random-effects - and plotted a per-mmHg European estimate
+# next to a per-SD East Asian one under identical row labels, so the "null" East Asian point sat seven
+# times further from zero than the "significant" European one. 76_renal_contrast.py now supplies both
+# ancestries on the primary estimator and on the common per-SD scale, with all three East Asian
+# outcomes rather than only the 2,117-case one.
+COHORT_LAB = {"EUR": "Europeans (CKDGen)", "EAS_BBJ": "East Asians (Biobank Japan)",
+              "EAS_TPMI": "East Asians (TPMI)", "EAS_ZERO": "East Asians (zero-overlap)"}
+with io.open(os.path.join(RES, "renal_contrast.csv"), encoding="utf-8") as fh:
+    _rc = list(csv.DictReader(fh))
+if len(_rc) != 8:
+    raise SystemExit(f"FIG5 PREP: renal_contrast.csv has {len(_rc)} rows, expected 8 (2 exposures x 4 sources)")
+for r in _rc:
+    add("a", f"{r['exposure']} → CKD {r['source']}", f"{r['exposure']} → CKD", COHORT_LAB[r["source"]],
+        r["b_perSD"], r["se_perSD"], r["p"], r["source_file"])
+# the one conversion this panel depends on must be visible in the source data, not implicit
+_eur_sbp = [r for r in _rc if r["exposure"] == "SBP" and r["source"] == "EUR"][0]
+if abs(float(_eur_sbp["b_perSD"]) / float(_eur_sbp["b_native"]) - 19.3) > 0.05:
+    raise SystemExit("FIG5 PREP: the European SBP row is not on the declared per-SD scale")
 
 # ---------- 5b + 5d: the ->BMI triangulation and the meta knife-edge ----------
 def rd(fn):
