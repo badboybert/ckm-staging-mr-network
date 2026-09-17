@@ -30,7 +30,7 @@ CKM_ROOT = _os.environ.get("CKM_ROOT") or _os.path.dirname(P4_ROOT)
 SHARED_LIB = _os.environ.get("CKM_SHARED_LIB") or _os.path.join(CKM_ROOT, "_shared")
 # ------------------------------------------------------------------------------------------------
 
-import io, os, re, sys, shutil, tempfile, subprocess
+import json, io, os, re, sys, shutil, tempfile, subprocess
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 sys.path.insert(0, SHARED_LIB)
@@ -149,19 +149,27 @@ def docx_uncantsplit(d):
 
 # ---------- the ladder: (expected-failing check label, [files to restore], apply) ----------------
 _ARROWS = r"body-mass index"
+# ---- targets DERIVED from the live package, never typed ------------------------------------------
+# Literal targets ("(99 files)", "main text **10,617**", "**52 references**") went stale as the package
+# moved and made the ladder refuse. These are read at run time so they cannot drift.
+_CF = json.load(io.open(os.path.join(BASE, "manifest", "CANONICAL_FACTS.json"), encoding="utf-8"))
+_MAIN, _REFS = _CF["main_text_words"], _CF["references_cited"]
+_NFILES = sum(len(_f) for _r, _d, _f in os.walk(R_PKG))
+_DEP = json.load(io.open(os.path.join(BASE, "manifest", "DEPOSIT.json"), encoding="utf-8"))
+
 MUT = [
     # ---- letter-side ----
     ("§1 the letter names the package", ["letter"],
      lambda: L(r"submission package v[\d.]+", "submission package v9.9")),
-    ("§1 the file count in the letter", ["letter"], lambda: L(r"\(99 files\)", "(98 files)", 1)),
+    ("§1 the file count in the letter", ["letter"],
+     lambda: L(rf"\({_NFILES} files\)", f"({_NFILES - 1} files)", 1)),
     ("§1 the letter's must-fix tally", ["letter"], lambda: L(r"8 of 10", "7 of 10")),
     ("§1 the letter's R1-R5 tally", ["letter"], lambda: L(r"5 of 5", "4 of 5")),
     ("§1 the letter's R6-R10 tally", ["letter"], lambda: L(r"0 of 5", "1 of 5")),
-    ("§3 R10: the letter's 'body-mass index' count", ["letter"],
-     lambda: L(_ARROWS + r'(["”]?) \(×5\)', _ARROWS + r"\1 (×9)")),
-    ("§3 R10: the letter's 'under-powered' count", ["letter"],
-     lambda: L(r'under-powered(["”]?) \(×2\)', r"under-powered\1 (×9)")),
-    ("§6 the letter's remaining-placeholder count", ["letter"], lambda: L(r"placeholders \| 3", "placeholders | 4")),
+    # RETIRED 2026-09-17: the R10 dialect-count checks and the placeholder-count check were removed
+    # from verify_rebuttal_r5.py in R6 (dialect harmonised; every placeholder resolved, and the Zenodo
+    # DOI filled at v1.2.0). Their mutations tripped NOTHING -- a mutation for a check that no longer
+    # exists reports a permanent MISS that reads as a broken gate. Removed with this record.
     ("§8 the letter does not claim a DOI is already minted", ["letter"],
      lambda: L(r"(## 1\. Summary)", r"Archived at 10.5281/zenodo.99999.\n\n\1", 1)),
     ("§8 the letter states the repository/DOI are pending", ["letter"],
@@ -178,7 +186,8 @@ MUT = [
     ("§2 M9: README names Cardiovascular Diabetology", ["README_SUBMISSION.md"],
      lambda: M("README_SUBMISSION.md", "Cardiovascular Diabetology", "Some Other Journal")),
     ("§3 R1: the reworded staging phrase", ["01_manuscript/ABSTRACT.md"],
-     lambda: M("01_manuscript/ABSTRACT.md", "25 of 27 cross-stage edges pointed from lower to higher stages", "the edges were concordant")),
+     # round 7 tightened this clause ("pointed from" -> "ran from"); the verifier followed, the ladder had not
+     lambda: M("01_manuscript/ABSTRACT.md", "25 of 27 cross-stage edges ran from lower to higher stages", "the edges were concordant")),
     ("§3 R2: 'directed causal graph' is gone", ["01_manuscript/RESULTS.md"],
      lambda: M_append("01_manuscript/RESULTS.md", "\nWe built a directed causal graph.\n")),
     ("§3 R8: 'correlated-marker negative control' is still present", ["01_manuscript/RESULTS.md"],
@@ -189,8 +198,12 @@ MUT = [
      lambda: M_append("02_cover_declarations/DECLARATIONS.md", "\nAccess required no institutional data-use agreement.\n")),
     ("§5 the Methods LLM statement names Anthropic Claude", ["01_manuscript/METHODS.md"],
      lambda: M("01_manuscript/METHODS.md", "Anthropic Claude", "an assistant")),
-    ("§5 the LLM-disclosure confirmation gate is still open", ["01_manuscript/METHODS.md"],
-     lambda: M("01_manuscript/METHODS.md", r"\[AUTHOR-SUPPLIED — confirm that this statement covers every tool[^\]]*\]", "")),
+    # R6 removed the author-facing confirmation placeholder and the verifier replaced this check with
+    # "publication-facing (confirmation instruction removed)". Mutate THAT: put the instruction back.
+    ("§5 the LLM disclosure is publication-facing (R6: confirmation instruction removed)",
+     ["01_manuscript/METHODS.md"],
+     lambda: M_append("01_manuscript/METHODS.md",
+                      "\n[AUTHOR-SUPPLIED — confirm that this statement covers every tool used.]\n")),
     ("§6 no surviving 'co-author' placeholder", ["02_cover_declarations/TITLE_PAGE.md"],
      lambda: M_append("02_cover_declarations/TITLE_PAGE.md", "\n[AUTHOR-SUPPLIED — co-author list to confirm]\n")),
     # ---- workbook (.xlsx) ----
@@ -218,7 +231,8 @@ MUT = [
      lambda: PDF_add("04_supplementary/SupplFig2.pdf", "Non-causal Fig 6")),
     ("§2 M3: 'Bonferroni survives' is present in full", ["04_supplementary/SupplFig6.pdf"],
      lambda: PDF_swap("04_supplementary/SupplFig6.pdf", "04_supplementary/SupplFig1.pdf")),
-    ("§3 R7: the shorthand 'qhet' indeed remains", ["03_main_figures/Figure2.pdf"],
+    # renamed in R6; the mutation already tripped the renamed check, only this label was stale
+    ("§3 R7: 'qhet' relabelled 'Q-minimisation' on Figure 2 panel d", ["03_main_figures/Figure2.pdf"],
      lambda: PDF_swap("03_main_figures/Figure2.pdf", "03_main_figures/Figure1.pdf")),
     ("§3 R6: the on-panel 'native units' note is indeed absent", ["03_main_figures/Figure1.pdf"],
      lambda: PDF_add("03_main_figures/Figure1.pdf", "magnitudes are not comparable across rows")),

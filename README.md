@@ -61,8 +61,9 @@ mutation-tested: an injected defect must make it fail with the message it names.
 
 ## Citation
 
-Please cite the manuscript. This deposit is archived on Zenodo; the concept DOI resolves to the
-latest version. *[AUTHOR-SUPPLIED — add the DOI once the first release is archived.]*
+Please cite the manuscript. This deposit is archived on Zenodo under the concept DOI
+[10.5281/zenodo.22813026](https://doi.org/10.5281/zenodo.22813026), which always resolves to the latest
+version. Source: https://github.com/badboybert/ckm-staging-mr-network
 
 ## Licence
 

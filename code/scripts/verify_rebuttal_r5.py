@@ -200,9 +200,16 @@ check("§2 M8: the competing-interests statement is present",
       "no competing interests" in _decl)
 # R6 (2026-08-20): the repo/DOI placeholders were replaced by a truthful interim statement (finalised
 # before publication); no bracketed placeholder survives in the declarations.
-check("§2 M8: repository/DOI carried as an interim statement, no bracketed placeholder (R6 superseded R5)",
+# 2026-09-17: superseded again. The deposit is archived (v1.2.0), so the interim wording is retired and
+# the declarations must carry the REAL identifiers from manifest/DEPOSIT.json -- the concept DOI, never
+# the version DOI. Asserting the old interim text would now enforce a stale placeholder.
+import json as _json5
+_dep5 = _json5.load(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                      "manifest", "DEPOSIT.json"), encoding="utf-8"))
+check("§2 M8: repository/DOI carried as the archived identifiers, no placeholder (superseded R5/R6)",
       "[GitHub URL" not in DECL_SCOPE
-      and "provided prior to publication" in DECL_SCOPE
+      and "provided prior to publication" not in DECL_SCOPE
+      and _dep5["concept_doi"] in DECL_SCOPE and _dep5["repository_url"] in DECL_SCOPE
       and not re.search(r"\[AUTHOR-SUPPLIED", DECL_SCOPE))
 
 # M9: README/AUTHOR_TODO agree; README does not list journal/citation/abstract as outstanding.

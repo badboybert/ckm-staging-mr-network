@@ -129,8 +129,14 @@ chk("the README states that raw summary statistics are NOT redistributed",
 # still discloses is the Zenodo DOI, which cannot exist until the release is archived; it lives in the
 # README. The old check also required AUTHOR-SUPPLIED inside .zenodo.json, which was satisfied only by
 # the co-author placeholder that has legitimately been filled.
-chk("the deposit README still discloses the Zenodo DOI as pending until the release is archived",
-    "AUTHOR-SUPPLIED" in readme)
+# 2026-09-17: v1.2.0 is archived, so "the DOI cannot exist yet" is no longer true and the old check
+# (README must still say AUTHOR-SUPPLIED) would now ENFORCE a stale placeholder. Repointed to the
+# truth: the README cites the CONCEPT DOI from manifest/DEPOSIT.json, and never the version DOI.
+_DEP = json.load(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                   "manifest", "DEPOSIT.json"), encoding="utf-8"))
+chk("the deposit README cites the Zenodo CONCEPT DOI, not the version DOI",
+    _DEP["concept_doi"] in readme and _DEP["version_doi"] not in readme
+    and "AUTHOR-SUPPLIED" not in readme)
 for pat, want in ((r"\*\*(\d+)\*\* non-self directed", F["network_edges_total"]),
                   (r"\*\*(\d+)\*\*\s*\n?edges pass", F["edges_passing_bonferroni"])):
     m = re.search(pat, readme)

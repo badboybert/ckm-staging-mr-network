@@ -978,6 +978,36 @@ else:
                     fail(f"GATE F [interaction vs renal] {_k} states {_key} P = {_m.group(1)}; "
                          f"renal_contrast.csv supports {_p:.2f}")
 
+# F35. DEPOSIT IDENTIFIERS come from one file and cite the CONCEPT DOI. The author pasted the VERSION
+#      DOI (10.5281/zenodo.22813027) when v1.2.0 was archived -- the same mix-up Paper B had. The
+#      concept DOI resolves to the latest version and is what a manuscript should cite; the version
+#      DOI pins v1.2.0 alone. Both are in manifest/DEPOSIT.json, re-derived from the Zenodo API.
+_dep_p = os.path.join(BASE, "manifest", "DEPOSIT.json")
+if not os.path.exists(_dep_p):
+    fail("GATE F [deposit ids] manifest/DEPOSIT.json missing")
+else:
+    with open(_dep_p, encoding="utf-8") as _fh:
+        _dep = json.load(_fh)
+    _seen_doi = 0
+    for _k, _txt in _SURF.items():
+        if "prior to publication" in _txt:
+            fail(f"GATE F [deposit ids] {_k} still ships the interim 'prior to publication' placeholder")
+        if _dep["version_doi"] in _txt:
+            fail(f"GATE F [deposit ids] {_k} cites the VERSION DOI {_dep['version_doi']}; cite the "
+                 f"concept DOI {_dep['concept_doi']}")
+        for _m in re.finditer(r"10\.5281/zenodo\.(\d+)", _txt):
+            _seen_doi += 1
+            if _m.group(0) not in (_dep["concept_doi"],):
+                fail(f"GATE F [deposit ids] {_k} cites {_m.group(0)}, which is not this deposit's "
+                     f"concept DOI {_dep['concept_doi']}")
+        for _m in re.finditer(r"https?://github\.com/[\w.-]+/[\w.-]+", _txt):
+            if _m.group(0).rstrip(".") != _dep["repository_url"]:
+                fail(f"GATE F [deposit ids] {_k} links {_m.group(0)}; the deposit is "
+                     f"{_dep['repository_url']}")
+    if _seen_doi == 0:
+        fail("GATE F [deposit ids] no shipped surface cites the Zenodo DOI — the code-availability "
+             "statement was removed rather than filled")
+
 # F8. Supplementary Methods must reach BOTH shipped twins, and must not be duplicated in the main
 #     Methods. The move was deferred for exactly this reason: SUPPLEMENTARY_INFORMATION.md is written
 #     from source while the .docx is assembled block by block, so text can land in one and not the

@@ -22,7 +22,7 @@ CKM_ROOT = _os.environ.get("CKM_ROOT") or _os.path.dirname(P4_ROOT)
 SHARED_LIB = _os.environ.get("CKM_SHARED_LIB") or _os.path.join(CKM_ROOT, "_shared")
 # ------------------------------------------------------------------------------------------------
 
-import io, os, re, sys, shutil, tempfile, subprocess
+import io, json, os, re, sys, shutil, tempfile, subprocess
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 sys.path.insert(0, SHARED_LIB)
@@ -109,11 +109,20 @@ def _strip_interim():
 
 
 # ---------- the ladder: (expected-failing check label, [files to restore], apply) ----------------
+# ---- targets DERIVED from the live package, never typed ------------------------------------------
+# Literal targets ("(99 files)", "main text **10,617**", "**52 references**") went stale as the package
+# moved and made the ladder refuse. These are read at run time so they cannot drift.
+_CF = json.load(io.open(os.path.join(BASE, "manifest", "CANONICAL_FACTS.json"), encoding="utf-8"))
+_MAIN, _REFS = _CF["main_text_words"], _CF["references_cited"]
+_NFILES = sum(len(_f) for _r, _d, _f in os.walk(R_PKG))
+_DEP = json.load(io.open(os.path.join(BASE, "manifest", "DEPOSIT.json"), encoding="utf-8"))
+
 MUT = [
     # ---- §1 letter counts vs derive_facts ----
     ("§1 main-text words match derive_facts", ["letter"],
-     lambda: L(r"main text \*\*10,617\*\*", "main text **10,600**")),
-    ("§1 reference count matches", ["letter"], lambda: L(r"\*\*52 references\*\*", "**51 references**")),
+     lambda: L(rf"main text \*\*{_MAIN:,}\*\*", f"main text **{_MAIN - 17:,}**")),
+    ("§1 reference count matches", ["letter"],
+     lambda: L(rf"\*\*{_REFS} references\*\*", f"**{_REFS - 1} references**")),
     # ---- §2 M1 graphical abstract ----
     ("§2 M1: the graphical-abstract PDF prints +0.42", ["03_main_figures/GraphicalAbstract.pdf"],
      lambda: PDF_swap("03_main_figures/GraphicalAbstract.pdf", "03_main_figures/Figure1.pdf")),
@@ -128,9 +137,10 @@ MUT = [
      ["02_cover_declarations/TITLE_PAGE.md"],
      lambda: M_append("02_cover_declarations/TITLE_PAGE.md",
                       "\nAffiliation numbers are to be set as superscripts at typesetting.\n")),
-    ("§2 M2: the repository identifiers are carried as a truthful interim statement",
+    # the defect that actually happened: the VERSION DOI pasted where the CONCEPT DOI belongs
+    ("§2 M2: the repository identifiers are now the real, archived ones (concept DOI + URL)",
      ["02_cover_declarations/DECLARATIONS.md"],
-     lambda: M("02_cover_declarations/DECLARATIONS.md", "provided prior to publication", "removed")),
+     lambda: M("02_cover_declarations/DECLARATIONS.md", _DEP["concept_doi"], _DEP["version_doi"])),
     # ---- §2 M3 LLM disclosure ----
     ("§2 M3: the LLM disclosure names Anthropic Claude", ["01_manuscript/METHODS.md"],
      lambda: M("01_manuscript/METHODS.md", "Anthropic Claude", "an assistant")),
